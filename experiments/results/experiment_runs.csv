@@ -1,0 +1,1 @@
+run_id,scenario_id,condition,start_time,detection_time,remediation_start_time,remediation_end_time,policy_decision,remediation_action,final_state,notes

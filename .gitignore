@@ -1,0 +1,101 @@
+# ==================================================
+# macOS
+# ==================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ==================================================
+# Python
+# ==================================================
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ==================================================
+# Environment variables and secrets
+# ==================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.crt
+credentials*
+secrets*
+
+# ==================================================
+# AWS local configuration
+# ==================================================
+.aws/
+
+# ==================================================
+# Terraform local files and state
+# ==================================================
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+.terraform.lock.hcl.backup
+
+# ==================================================
+# Raw Olist source data
+# Source data will be documented in GitHub and stored
+# locally/Amazon S3, not committed to normal Git.
+# ==================================================
+data/bronze/raw/olist/*.csv
+data/bronze/raw/olist/*.zip
+
+# ==================================================
+# Large generated synthetic data
+# ==================================================
+data/bronze/generated/synthetic_customer_contact.csv
+
+# ==================================================
+# Generated Silver outputs
+# ==================================================
+data/silver/*
+!data/silver/.gitkeep
+
+# ==================================================
+# Generated Gold outputs
+# ==================================================
+data/gold/internal/*
+!data/gold/internal/.gitkeep
+
+data/gold/public/*
+!data/gold/public/.gitkeep
+
+# ==================================================
+# Generated quarantine outputs
+# ==================================================
+data/quarantine/*
+!data/quarantine/.gitkeep
+
+# ==================================================
+# Runtime and temporary logs
+# ==================================================
+logs/*.log
+*.tmp
+*.temp
+
+# ==================================================
+# IDE and editor files
+# ==================================================
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,28 @@
+dataset: gold_daily_sales
+version: 1.0
+owner: Analytics Team
+classification: Internal
+freshness_slo_hours: 24
+allowed_destinations:
+  - gold/internal
+columns:
+  order_date:
+    type: date
+    required: true
+    pii: false
+  total_orders:
+    type: integer
+    required: true
+    pii: false
+  total_revenue:
+    type: decimal
+    required: true
+    pii: false
+  average_order_value:
+    type: decimal
+    required: true
+    pii: false
+compatibility:
+  allow_add_optional_column: true
+  allow_remove_required_column: false
+  allow_type_change_required_column: false

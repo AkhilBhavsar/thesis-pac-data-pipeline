@@ -1,0 +1,12 @@
+dataset,source_path,row_count,column_count,duplicate_full_rows,primary_key,duplicate_primary_key_rows,null_primary_key_rows
+customers,data/bronze/raw/olist/olist_customers_dataset.csv,99441,5,0,customer_id,0.0,0.0
+geolocation,data/bronze/raw/olist/olist_geolocation_dataset.csv,1000163,5,261831,,,
+order_items,data/bronze/raw/olist/olist_order_items_dataset.csv,112650,7,0,"order_id, order_item_id",0.0,0.0
+payments,data/bronze/raw/olist/olist_order_payments_dataset.csv,103886,5,0,"order_id, payment_sequential",0.0,0.0
+reviews,data/bronze/raw/olist/olist_order_reviews_dataset.csv,99224,7,0,review_id,1603.0,0.0
+orders,data/bronze/raw/olist/olist_orders_dataset.csv,99441,8,0,order_id,0.0,0.0
+products,data/bronze/raw/olist/olist_products_dataset.csv,32951,9,0,product_id,0.0,0.0
+sellers,data/bronze/raw/olist/olist_sellers_dataset.csv,3095,4,0,seller_id,0.0,0.0
+product_category_translation,data/bronze/raw/olist/product_category_name_translation.csv,71,2,0,product_category_name,0.0,0.0
+synthetic_customer_contact,data/bronze/generated/synthetic_customer_contact.csv,99441,5,0,customer_id,0.0,0.0
+freshness_control,data/bronze/generated/freshness_control.csv,4,6,0,"dataset_name, run_id",0.0,0.0

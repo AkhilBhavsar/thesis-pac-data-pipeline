@@ -1,0 +1,5 @@
+dataset_name,expected_publish_time,actual_publish_time,freshness_slo_hours,freshness_status,run_id
+gold_daily_sales,2026-07-06T23:58:01,2026-07-05T23:58:01,24,PASS,baseline_run_001
+gold_product_category_revenue,2026-07-06T23:58:01,2026-07-05T23:58:01,24,PASS,baseline_run_001
+gold_customer_order_summary,2026-07-06T23:58:01,2026-07-05T23:58:01,24,PASS,baseline_run_001
+gold_public_sales_dashboard,2026-07-06T23:58:01,2026-07-05T23:58:01,24,PASS,baseline_run_001

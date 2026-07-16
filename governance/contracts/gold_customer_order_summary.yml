@@ -1,0 +1,38 @@
+dataset: gold_customer_order_summary
+version: 1.0
+owner: Analytics Team
+classification: Confidential
+freshness_slo_hours: 24
+allowed_destinations:
+  - gold/internal
+columns:
+  customer_id:
+    type: string
+    required: true
+    pii: false
+  customer_state:
+    type: string
+    required: true
+    pii: false
+  total_orders:
+    type: integer
+    required: true
+    pii: false
+  total_spend:
+    type: decimal
+    required: true
+    pii: false
+  first_order_date:
+    type: date
+    required: true
+    pii: false
+  last_order_date:
+    type: date
+    required: true
+    pii: false
+forbidden_destinations:
+  - gold/public
+compatibility:
+  allow_add_optional_column: true
+  allow_remove_required_column: false
+  allow_type_change_required_column: false

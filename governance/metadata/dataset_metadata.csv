@@ -1,0 +1,9 @@
+dataset_name,owner,classification,retention_days,destination_zone,freshness_slo_hours,business_criticality
+bronze_orders,Data Platform Team,Internal,365,bronze/raw,24,High
+bronze_customers,Data Platform Team,Confidential,365,bronze/raw,24,High
+silver_orders,Data Platform Team,Internal,365,silver,24,High
+silver_customers,Data Platform Team,Confidential,365,silver,24,Medium
+gold_daily_sales,Analytics Team,Internal,365,gold/internal,24,High
+gold_product_category_revenue,Analytics Team,Internal,365,gold/internal,24,Medium
+gold_customer_order_summary,Analytics Team,Confidential,365,gold/internal,24,Medium
+gold_public_sales_dashboard,Analytics Team,Public-Safe,365,gold/public,24,High
