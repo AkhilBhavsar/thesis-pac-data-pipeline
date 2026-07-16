@@ -1,0 +1,54 @@
+dataset,check_name,status,severity,observed_value,expected_value,details
+silver_orders,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_orders,no_full_duplicate_rows,PASS,critical,0,0,
+silver_orders,primary_key_not_null,PASS,critical,0,0,
+silver_orders,primary_key_unique,PASS,critical,0,0,
+silver_order_items,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_order_items,no_full_duplicate_rows,PASS,critical,0,0,
+silver_order_items,primary_key_not_null,PASS,critical,0,0,
+silver_order_items,primary_key_unique,PASS,critical,0,0,
+silver_payments,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_payments,no_full_duplicate_rows,PASS,critical,0,0,
+silver_payments,primary_key_not_null,PASS,critical,0,0,
+silver_payments,primary_key_unique,PASS,critical,0,0,
+silver_customers,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_customers,no_full_duplicate_rows,PASS,critical,0,0,
+silver_customers,primary_key_not_null,PASS,critical,0,0,
+silver_customers,primary_key_unique,PASS,critical,0,0,
+silver_customer_contact,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_customer_contact,no_full_duplicate_rows,PASS,critical,0,0,
+silver_customer_contact,primary_key_not_null,PASS,critical,0,0,
+silver_customer_contact,primary_key_unique,PASS,critical,0,0,
+silver_products,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_products,no_full_duplicate_rows,PASS,critical,0,0,
+silver_products,primary_key_not_null,PASS,critical,0,0,
+silver_products,primary_key_unique,PASS,critical,0,0,
+silver_product_categories,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_product_categories,no_full_duplicate_rows,PASS,critical,0,0,
+silver_product_categories,primary_key_not_null,PASS,critical,0,0,
+silver_product_categories,primary_key_unique,PASS,critical,0,0,
+silver_geolocation,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_geolocation,no_full_duplicate_rows,PASS,critical,0,0,
+silver_geolocation,primary_key_not_null,PASS,critical,0,0,
+silver_geolocation,primary_key_unique,PASS,critical,0,0,
+silver_reviews,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_reviews,no_full_duplicate_rows,PASS,critical,0,0,
+silver_reviews,primary_key_not_null,PASS,critical,0,0,
+silver_reviews,primary_key_unique,PASS,critical,0,0,
+silver_sellers,required_columns_present,PASS,critical,none,none missing,Required Silver schema columns.
+silver_sellers,no_full_duplicate_rows,PASS,critical,0,0,
+silver_sellers,primary_key_not_null,PASS,critical,0,0,
+silver_sellers,primary_key_unique,PASS,critical,0,0,
+silver_order_items,price_non_negative,PASS,critical,0,0,
+silver_order_items,freight_non_negative,PASS,critical,0,0,
+silver_reviews,review_score_between_1_and_5,PASS,critical,0,0,
+silver_geolocation,latitude_valid,PASS,critical,0,0,
+silver_geolocation,longitude_valid,PASS,critical,0,0,
+silver_orders,customer_foreign_key_valid,PASS,critical,0,0,
+silver_order_items,order_foreign_key_valid,PASS,critical,0,0,
+silver_payments,order_foreign_key_valid,PASS,critical,0,0,
+silver_order_items,product_foreign_key_valid,PASS,critical,0,0,
+silver_order_items,seller_foreign_key_valid,PASS,critical,0,0,
+silver_reviews,order_foreign_key_valid,PASS,critical,0,0,
+silver_customer_contact,customer_foreign_key_valid,PASS,critical,0,0,
+silver_customer_contact,customer_contact_coverage,PASS,critical,100.0,100.0,

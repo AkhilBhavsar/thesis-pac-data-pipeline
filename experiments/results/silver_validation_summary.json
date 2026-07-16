@@ -1,0 +1,10 @@
+{
+  "validation_started_at": "2026-07-16T02:17:37.596868+00:00",
+  "validation_completed_at": "2026-07-16T02:17:38.421938+00:00",
+  "duration_seconds": 0.8251,
+  "overall_status": "PASS",
+  "total_checks": 53,
+  "passed_checks": 53,
+  "failed_checks": 0,
+  "critical_failures": 0
+}
