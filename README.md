@@ -53,7 +53,8 @@ Trusted Publication or Quarantine
 - [x] Dataset contracts generated
 - [x] Freshness-control data generated
 - [x] Source-data profiling completed
-- [ ] Silver layer implemented
+- [x] Silver layer implemented
+- [x] Silver layer validated
 - [ ] Gold layer implemented
 - [ ] Local baseline validated
 - [ ] AWS cloud foundation provisioned

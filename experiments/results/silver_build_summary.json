@@ -1,0 +1,109 @@
+{
+  "status": "success",
+  "build_started_at": "2026-07-16T02:18:22.894893+00:00",
+  "build_completed_at": "2026-07-16T02:18:36.689289+00:00",
+  "build_duration_seconds": 13.7944,
+  "dataset_count": 10,
+  "outputs": [
+    {
+      "dataset": "silver_orders",
+      "output_path": "data/silver/silver_orders.csv",
+      "source_rows": 99441,
+      "silver_rows": 99441,
+      "column_count": 11,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "0bdcff6352d2867e1d9e05b64fb23fe6f7a5db1b914eef55a20ef49381bbd727",
+      "notes": "Parsed timestamps and added delivery measures."
+    },
+    {
+      "dataset": "silver_order_items",
+      "output_path": "data/silver/silver_order_items.csv",
+      "source_rows": 112650,
+      "silver_rows": 112650,
+      "column_count": 8,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "466dc51444a32c067cedf06b4487e80806833f4cfae518c26ff5a01e975452f7",
+      "notes": "Standardised numeric fields and calculated item total."
+    },
+    {
+      "dataset": "silver_payments",
+      "output_path": "data/silver/silver_payments.csv",
+      "source_rows": 103886,
+      "silver_rows": 103886,
+      "column_count": 5,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "2a4d5207cbd39e84f37acc0eb7692904594cf86ee7afd61cfac898bb26be8852",
+      "notes": "Standardised payment numeric fields."
+    },
+    {
+      "dataset": "silver_customers",
+      "output_path": "data/silver/silver_customers.csv",
+      "source_rows": 99441,
+      "silver_rows": 99441,
+      "column_count": 5,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "2f8671c604c03daaf2fa37ad5cd1a7c48dbea6752afbcaaaec453581b7063289",
+      "notes": "Standardised location fields and ZIP prefixes."
+    },
+    {
+      "dataset": "silver_customer_contact",
+      "output_path": "data/silver/silver_customer_contact.csv",
+      "source_rows": 99441,
+      "silver_rows": 99441,
+      "column_count": 5,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "3c12c57a490a4c223c8499cde87ca3fe49ef3f3d9d9f4712073bdfb408d28f42",
+      "notes": "Standardised synthetic contact and consent fields."
+    },
+    {
+      "dataset": "silver_products",
+      "output_path": "data/silver/silver_products.csv",
+      "source_rows": 32951,
+      "silver_rows": 32951,
+      "column_count": 9,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "4f4539bfb481d9b5d3e789e53fb679f88141d7e99b47e4b0d0094598f95b4ef9",
+      "notes": "Corrected source column-name spelling and numeric types."
+    },
+    {
+      "dataset": "silver_product_categories",
+      "output_path": "data/silver/silver_product_categories.csv",
+      "source_rows": 71,
+      "silver_rows": 71,
+      "column_count": 2,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "3efae30a48a918ded5201784b622a10760e441004e7cab24c688405b7dd3d136",
+      "notes": "Standardised category translation values."
+    },
+    {
+      "dataset": "silver_geolocation",
+      "output_path": "data/silver/silver_geolocation.csv",
+      "source_rows": 1000163,
+      "silver_rows": 19015,
+      "column_count": 6,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "2ecdfb5c615490853995ce14a9342d075526b3b685bd6968973caec82bd94d21",
+      "notes": "Removed exact duplicates and created one deterministic record per ZIP-code prefix."
+    },
+    {
+      "dataset": "silver_reviews",
+      "output_path": "data/silver/silver_reviews.csv",
+      "source_rows": 99224,
+      "silver_rows": 99224,
+      "column_count": 9,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "cea99367b61d8e33ea4d26f360ee53e81ec054f06612d1aae6a9ef890db45530",
+      "notes": "Preserved review records and created deterministic review_record_id."
+    },
+    {
+      "dataset": "silver_sellers",
+      "output_path": "data/silver/silver_sellers.csv",
+      "source_rows": 3095,
+      "silver_rows": 3095,
+      "column_count": 4,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "4ea9dcc6cdab8bc0d234f49cd42a5d74d52e17a1a5f36991a06d90b5af4a375b",
+      "notes": "Standardised seller location fields."
+    }
+  ]
+}
