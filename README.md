@@ -60,7 +60,7 @@ Trusted Publication or Quarantine
 - [x] Gold data-quality and reconciliation validation completed
 - [x] Gold contracts implemented and automatically validated
 - [x] Gold deterministic-output verification completed
-- [ ] Local baseline validated
+- [x] Local baseline C0 implemented and validated
 - [ ] AWS cloud foundation provisioned
 - [ ] Cloud baseline C0 implemented
 - [ ] Policy-as-Code condition C1 implemented
@@ -96,6 +96,33 @@ Trusted Publication or Quarantine
 - `.github/` — GitHub Actions workflows
 
 ## Project Governance
+
+## Local C0 Baseline
+
+The local C0 reference pipeline executes the complete Silver-to-Gold
+workflow without Policy-as-Code gates, bounded self-healing, or automatic
+remediation.
+
+Latest validated execution:
+
+- Run ID: `local-c0-20260717T225142Z`
+- Pipeline stages executed: 5
+- Pipeline stages passed: 5
+- Total runtime: 40.2440 seconds
+- Silver validation: 53 checks passed
+- Gold data-quality validation: 110 checks passed
+- Gold contract validation: 211 checks passed
+- C0 evidence validation: 31 checks passed
+- Failed checks: 0
+- Policy-as-Code enabled: false
+- Bounded self-healing enabled: false
+- Automatic remediation enabled: false
+
+The recorded runtime represents one execution on the local development
+machine. Repeated and cloud executions will be collected separately for
+the controlled experimental comparison.
+
+
 
 The `main` branch represents the latest validated project state.
 
