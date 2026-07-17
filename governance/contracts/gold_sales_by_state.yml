@@ -1,37 +1,19 @@
-dataset: gold_customer_order_summary
+dataset: gold_sales_by_state
 version: "1.0.0"
 owner: Analytics Team
-classification: Confidential
-grain: one row per customer_unique_id
+classification: Internal
+grain: one row per customer_state
 freshness_slo_hours: 24
 
 allowed_destinations:
   - gold/internal
 
-forbidden_destinations:
-  - gold/public
-
 primary_key:
-  - customer_unique_id
+  - customer_state
 
 columns:
-  customer_unique_id:
-    type: string
-    required: true
-    pii: true
-
   customer_state:
     type: string
-    required: true
-    pii: false
-
-  first_order_date:
-    type: date
-    required: true
-    pii: false
-
-  latest_order_date:
-    type: date
     required: true
     pii: false
 
@@ -40,12 +22,12 @@ columns:
     required: true
     pii: false
 
-  total_items:
+  unique_customers:
     type: integer
     required: true
     pii: false
 
-  distinct_products:
+  units_sold:
     type: integer
     required: true
     pii: false
@@ -60,7 +42,7 @@ columns:
     required: true
     pii: false
 
-  total_spend:
+  total_revenue:
     type: decimal
     required: true
     pii: false

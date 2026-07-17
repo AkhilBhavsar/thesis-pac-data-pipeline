@@ -1,0 +1,111 @@
+dataset,check_name,status,severity,observed_value,expected_value,details
+gold_daily_sales,contract_columns_exact,PASS,critical,"[""order_date"", ""total_orders"", ""unique_customers"", ""units_sold"", ""product_revenue"", ""freight_revenue"", ""total_revenue"", ""average_order_value"", ""average_freight_value""]","[""order_date"", ""total_orders"", ""unique_customers"", ""units_sold"", ""product_revenue"", ""freight_revenue"", ""total_revenue"", ""average_order_value"", ""average_freight_value""]",Column names and order must match the local Gold contract.
+gold_daily_sales,dataset_not_empty,PASS,critical,612,> 0,
+gold_daily_sales,no_full_duplicate_rows,PASS,critical,0,0,
+gold_daily_sales,primary_key_not_null,PASS,critical,0,0,
+gold_daily_sales,primary_key_unique,PASS,critical,0,0,
+gold_daily_sales,no_null_cells,PASS,critical,0,0,
+gold_sales_by_state,contract_columns_exact,PASS,critical,"[""customer_state"", ""total_orders"", ""unique_customers"", ""units_sold"", ""product_revenue"", ""freight_revenue"", ""total_revenue"", ""average_order_value""]","[""customer_state"", ""total_orders"", ""unique_customers"", ""units_sold"", ""product_revenue"", ""freight_revenue"", ""total_revenue"", ""average_order_value""]",Column names and order must match the local Gold contract.
+gold_sales_by_state,dataset_not_empty,PASS,critical,27,> 0,
+gold_sales_by_state,no_full_duplicate_rows,PASS,critical,0,0,
+gold_sales_by_state,primary_key_not_null,PASS,critical,0,0,
+gold_sales_by_state,primary_key_unique,PASS,critical,0,0,
+gold_sales_by_state,no_null_cells,PASS,critical,0,0,
+gold_product_category_revenue,contract_columns_exact,PASS,critical,"[""product_category_name_english"", ""total_orders"", ""unique_customers"", ""units_sold"", ""product_revenue"", ""freight_revenue"", ""total_revenue"", ""average_item_price"", ""revenue_share_pct""]","[""product_category_name_english"", ""total_orders"", ""unique_customers"", ""units_sold"", ""product_revenue"", ""freight_revenue"", ""total_revenue"", ""average_item_price"", ""revenue_share_pct""]",Column names and order must match the local Gold contract.
+gold_product_category_revenue,dataset_not_empty,PASS,critical,72,> 0,
+gold_product_category_revenue,no_full_duplicate_rows,PASS,critical,0,0,
+gold_product_category_revenue,primary_key_not_null,PASS,critical,0,0,
+gold_product_category_revenue,primary_key_unique,PASS,critical,0,0,
+gold_product_category_revenue,no_null_cells,PASS,critical,0,0,
+gold_customer_order_summary,contract_columns_exact,PASS,critical,"[""customer_unique_id"", ""customer_state"", ""first_order_date"", ""latest_order_date"", ""total_orders"", ""total_items"", ""distinct_products"", ""product_revenue"", ""freight_revenue"", ""total_spend"", ""average_order_value""]","[""customer_unique_id"", ""customer_state"", ""first_order_date"", ""latest_order_date"", ""total_orders"", ""total_items"", ""distinct_products"", ""product_revenue"", ""freight_revenue"", ""total_spend"", ""average_order_value""]",Column names and order must match the local Gold contract.
+gold_customer_order_summary,dataset_not_empty,PASS,critical,93358,> 0,
+gold_customer_order_summary,no_full_duplicate_rows,PASS,critical,0,0,
+gold_customer_order_summary,primary_key_not_null,PASS,critical,0,0,
+gold_customer_order_summary,primary_key_unique,PASS,critical,0,0,
+gold_customer_order_summary,no_null_cells,PASS,critical,0,0,
+gold_public_sales_dashboard,contract_columns_exact,PASS,critical,"[""order_date"", ""customer_state"", ""product_category_name_english"", ""total_orders"", ""units_sold"", ""product_revenue"", ""freight_revenue"", ""total_revenue""]","[""order_date"", ""customer_state"", ""product_category_name_english"", ""total_orders"", ""units_sold"", ""product_revenue"", ""freight_revenue"", ""total_revenue""]",Column names and order must match the local Gold contract.
+gold_public_sales_dashboard,dataset_not_empty,PASS,critical,55872,> 0,
+gold_public_sales_dashboard,no_full_duplicate_rows,PASS,critical,0,0,
+gold_public_sales_dashboard,primary_key_not_null,PASS,critical,0,0,
+gold_public_sales_dashboard,primary_key_unique,PASS,critical,0,0,
+gold_public_sales_dashboard,no_null_cells,PASS,critical,0,0,
+gold_daily_sales,total_orders_non_negative,PASS,critical,0,0,
+gold_daily_sales,units_sold_non_negative,PASS,critical,0,0,
+gold_daily_sales,product_revenue_non_negative,PASS,critical,0,0,
+gold_daily_sales,freight_revenue_non_negative,PASS,critical,0,0,
+gold_daily_sales,total_revenue_non_negative,PASS,critical,0,0,
+gold_daily_sales,unique_customers_non_negative,PASS,critical,0,0,
+gold_daily_sales,average_order_value_non_negative,PASS,critical,0,0,
+gold_daily_sales,average_freight_value_non_negative,PASS,critical,0,0,
+gold_sales_by_state,total_orders_non_negative,PASS,critical,0,0,
+gold_sales_by_state,units_sold_non_negative,PASS,critical,0,0,
+gold_sales_by_state,product_revenue_non_negative,PASS,critical,0,0,
+gold_sales_by_state,freight_revenue_non_negative,PASS,critical,0,0,
+gold_sales_by_state,total_revenue_non_negative,PASS,critical,0,0,
+gold_sales_by_state,unique_customers_non_negative,PASS,critical,0,0,
+gold_sales_by_state,average_order_value_non_negative,PASS,critical,0,0,
+gold_product_category_revenue,total_orders_non_negative,PASS,critical,0,0,
+gold_product_category_revenue,units_sold_non_negative,PASS,critical,0,0,
+gold_product_category_revenue,product_revenue_non_negative,PASS,critical,0,0,
+gold_product_category_revenue,freight_revenue_non_negative,PASS,critical,0,0,
+gold_product_category_revenue,total_revenue_non_negative,PASS,critical,0,0,
+gold_product_category_revenue,unique_customers_non_negative,PASS,critical,0,0,
+gold_product_category_revenue,average_item_price_non_negative,PASS,critical,0,0,
+gold_product_category_revenue,revenue_share_pct_non_negative,PASS,critical,0,0,
+gold_customer_order_summary,total_orders_non_negative,PASS,critical,0,0,
+gold_customer_order_summary,total_items_non_negative,PASS,critical,0,0,
+gold_customer_order_summary,distinct_products_non_negative,PASS,critical,0,0,
+gold_customer_order_summary,product_revenue_non_negative,PASS,critical,0,0,
+gold_customer_order_summary,freight_revenue_non_negative,PASS,critical,0,0,
+gold_customer_order_summary,total_spend_non_negative,PASS,critical,0,0,
+gold_customer_order_summary,average_order_value_non_negative,PASS,critical,0,0,
+gold_public_sales_dashboard,total_orders_non_negative,PASS,critical,0,0,
+gold_public_sales_dashboard,units_sold_non_negative,PASS,critical,0,0,
+gold_public_sales_dashboard,product_revenue_non_negative,PASS,critical,0,0,
+gold_public_sales_dashboard,freight_revenue_non_negative,PASS,critical,0,0,
+gold_public_sales_dashboard,total_revenue_non_negative,PASS,critical,0,0,
+gold_daily_sales,revenue_components_reconcile,PASS,critical,0,0,Product revenue plus freight revenue must equal total_revenue within rounding tolerance.
+gold_sales_by_state,revenue_components_reconcile,PASS,critical,0,0,Product revenue plus freight revenue must equal total_revenue within rounding tolerance.
+gold_product_category_revenue,revenue_components_reconcile,PASS,critical,0,0,Product revenue plus freight revenue must equal total_revenue within rounding tolerance.
+gold_customer_order_summary,revenue_components_reconcile,PASS,critical,0,0,Product revenue plus freight revenue must equal total_spend within rounding tolerance.
+gold_public_sales_dashboard,revenue_components_reconcile,PASS,critical,0,0,Product revenue plus freight revenue must equal total_revenue within rounding tolerance.
+gold_daily_sales,average_order_value_correct,PASS,critical,0,0,
+gold_daily_sales,average_freight_value_correct,PASS,critical,0,0,
+gold_sales_by_state,average_order_value_correct,PASS,critical,0,0,
+gold_product_category_revenue,average_item_price_correct,PASS,critical,0,0,
+gold_customer_order_summary,average_order_value_correct,PASS,critical,0,0,
+gold_daily_sales,order_date_valid_date,PASS,critical,0,0,
+gold_customer_order_summary,first_order_date_valid_date,PASS,critical,0,0,
+gold_customer_order_summary,latest_order_date_valid_date,PASS,critical,0,0,
+gold_public_sales_dashboard,order_date_valid_date,PASS,critical,0,0,
+gold_customer_order_summary,first_order_not_after_latest_order,PASS,critical,0,0,
+gold_customer_order_summary,distinct_products_not_above_items,PASS,critical,0,0,
+gold_daily_sales,unique_customers_not_above_orders,PASS,critical,0,0,
+gold_product_category_revenue,revenue_share_sums_to_100,PASS,critical,100.01,100.0,
+gold_sales_by_state,customer_state_format_valid,PASS,critical,0,0,
+gold_public_sales_dashboard,no_forbidden_public_columns,PASS,critical,none,none,Public output must not contain direct identifiers or contact attributes.
+gold_public_sales_dashboard,no_email_like_values,PASS,critical,0,0,
+gold_public_sales_dashboard,no_phone_like_values,PASS,critical,0,0,
+gold_daily_sales,delivered_order_count_reconciles,PASS,critical,96478,96478,
+gold_sales_by_state,delivered_order_count_reconciles,PASS,critical,96478,96478,
+gold_customer_order_summary,delivered_order_count_reconciles,PASS,critical,96478,96478,
+gold_daily_sales,delivered_item_count_reconciles,PASS,critical,110197,110197,
+gold_sales_by_state,delivered_item_count_reconciles,PASS,critical,110197,110197,
+gold_product_category_revenue,delivered_item_count_reconciles,PASS,critical,110197,110197,
+gold_customer_order_summary,delivered_item_count_reconciles,PASS,critical,110197,110197,
+gold_public_sales_dashboard,delivered_item_count_reconciles,PASS,critical,110197,110197,
+gold_daily_sales,total_revenue_reconciles,PASS,critical,15419773.75,15419773.75,Absolute difference: 0.0000; allowed tolerance: 5.00
+gold_sales_by_state,total_revenue_reconciles,PASS,critical,15419773.75,15419773.75,Absolute difference: 0.0000; allowed tolerance: 5.00
+gold_product_category_revenue,total_revenue_reconciles,PASS,critical,15419773.75,15419773.75,Absolute difference: 0.0000; allowed tolerance: 5.00
+gold_customer_order_summary,total_revenue_reconciles,PASS,critical,15419773.75,15419773.75,Absolute difference: 0.0000; allowed tolerance: 5.00
+gold_public_sales_dashboard,total_revenue_reconciles,PASS,critical,15419773.75,15419773.75,Absolute difference: 0.0000; allowed tolerance: 5.00
+gold_daily_sales,product_revenue_reconciles,PASS,critical,13221498.11,13221498.11,Absolute difference: 0.0000
+gold_sales_by_state,product_revenue_reconciles,PASS,critical,13221498.11,13221498.11,Absolute difference: 0.0000
+gold_product_category_revenue,product_revenue_reconciles,PASS,critical,13221498.11,13221498.11,Absolute difference: 0.0000
+gold_customer_order_summary,product_revenue_reconciles,PASS,critical,13221498.11,13221498.11,Absolute difference: 0.0000
+gold_public_sales_dashboard,product_revenue_reconciles,PASS,critical,13221498.11,13221498.11,Absolute difference: 0.0000
+gold_daily_sales,freight_revenue_reconciles,PASS,critical,2198275.64,2198275.64,Absolute difference: 0.0000
+gold_sales_by_state,freight_revenue_reconciles,PASS,critical,2198275.64,2198275.64,Absolute difference: 0.0000
+gold_product_category_revenue,freight_revenue_reconciles,PASS,critical,2198275.64,2198275.64,Absolute difference: 0.0000
+gold_customer_order_summary,freight_revenue_reconciles,PASS,critical,2198275.64,2198275.64,Absolute difference: 0.0000
+gold_public_sales_dashboard,freight_revenue_reconciles,PASS,critical,2198275.64,2198275.64,Absolute difference: 0.0000
