@@ -1,0 +1,6 @@
+run_id,condition,environment,stage_order,stage_name,script,started_at,completed_at,duration_seconds,exit_code,status,log_path
+local-c0-20260717T225142Z,C0,local,1,silver_build,scripts/build_silver.py,2026-07-17T22:51:42.338428+00:00,2026-07-17T22:51:56.379036+00:00,14.0406,0,PASS,logs/local_c0/local-c0-20260717T225142Z/01_silver_build.log
+local-c0-20260717T225142Z,C0,local,2,silver_validation,scripts/validate_silver.py,2026-07-17T22:51:56.379445+00:00,2026-07-17T22:51:57.423210+00:00,1.0438,0,PASS,logs/local_c0/local-c0-20260717T225142Z/02_silver_validation.log
+local-c0-20260717T225142Z,C0,local,3,gold_build,scripts/build_gold.py,2026-07-17T22:51:57.423580+00:00,2026-07-17T22:52:21.075182+00:00,23.6516,0,PASS,logs/local_c0/local-c0-20260717T225142Z/03_gold_build.log
+local-c0-20260717T225142Z,C0,local,4,gold_validation,scripts/validate_gold.py,2026-07-17T22:52:21.075551+00:00,2026-07-17T22:52:22.260457+00:00,1.1849,0,PASS,logs/local_c0/local-c0-20260717T225142Z/04_gold_validation.log
+local-c0-20260717T225142Z,C0,local,5,gold_contract_validation,scripts/validate_gold_contracts.py,2026-07-17T22:52:22.260805+00:00,2026-07-17T22:52:22.581922+00:00,0.3211,0,PASS,logs/local_c0/local-c0-20260717T225142Z/05_gold_contract_validation.log

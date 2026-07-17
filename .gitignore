@@ -99,3 +99,6 @@ logs/*.log
 .idea/
 *.swp
 *.swo
+
+# Runtime execution logs
+logs/
