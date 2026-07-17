@@ -1,37 +1,74 @@
 dataset: gold_public_sales_dashboard
-version: 1.0
+version: "1.0.0"
 owner: Analytics Team
 classification: Public-Safe
+grain: one row per order_date, customer_state and product category
 freshness_slo_hours: 24
+
 allowed_destinations:
   - gold/public
+
+primary_key:
+  - order_date
+  - customer_state
+  - product_category_name_english
+
 columns:
   order_date:
     type: date
     required: true
     pii: false
+
   customer_state:
     type: string
     required: true
     pii: false
+
   product_category_name_english:
     type: string
     required: true
     pii: false
+
   total_orders:
     type: integer
     required: true
     pii: false
+
+  units_sold:
+    type: integer
+    required: true
+    pii: false
+
+  product_revenue:
+    type: decimal
+    required: true
+    pii: false
+
+  freight_revenue:
+    type: decimal
+    required: true
+    pii: false
+
   total_revenue:
     type: decimal
     required: true
     pii: false
+
 forbidden_fields:
   - customer_id
   - customer_unique_id
+  - order_id
+  - product_id
+  - seller_id
+  - review_id
   - synthetic_email
   - synthetic_phone
+  - consent_flag
+  - customer_zip_code_prefix
+  - seller_zip_code_prefix
+  - address
+
 compatibility:
-  allow_add_optional_column: true
+  allow_add_optional_column: false
   allow_remove_required_column: false
   allow_type_change_required_column: false

@@ -1,0 +1,9 @@
+{
+  "validation_started_at": "2026-07-17T22:31:54.960455+00:00",
+  "validation_completed_at": "2026-07-17T22:32:42.663282+00:00",
+  "duration_seconds": 47.7028,
+  "overall_status": "PASS",
+  "dataset_count": 5,
+  "deterministic_datasets": 5,
+  "failed_datasets": 0
+}

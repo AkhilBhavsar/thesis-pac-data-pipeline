@@ -1,0 +1,11 @@
+{
+  "validation_started_at": "2026-07-17T22:29:27.716355+00:00",
+  "validation_completed_at": "2026-07-17T22:29:27.845107+00:00",
+  "duration_seconds": 0.1288,
+  "contract_count": 5,
+  "overall_status": "PASS",
+  "total_checks": 211,
+  "passed_checks": 211,
+  "failed_checks": 0,
+  "critical_failures": 0
+}

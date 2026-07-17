@@ -1,0 +1,66 @@
+{
+  "status": "success",
+  "build_started_at": "2026-07-17T22:32:19.127107+00:00",
+  "build_completed_at": "2026-07-17T22:32:42.611824+00:00",
+  "build_duration_seconds": 23.4847,
+  "delivered_order_count": 96478,
+  "delivered_item_count": 110197,
+  "dataset_count": 5,
+  "outputs": [
+    {
+      "dataset": "gold_daily_sales",
+      "zone": "internal",
+      "output_path": "data/gold/internal/gold_daily_sales.csv",
+      "row_count": 612,
+      "column_count": 9,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "cfc470d58f77e14f05464248054b16d10274069100dfb9ee339f3056ea25423c",
+      "input_row_counts_json": "{\"silver_customers\": 99441, \"silver_order_items\": 112650, \"silver_orders\": 99441, \"silver_product_categories\": 71, \"silver_products\": 32951}",
+      "notes": "Daily delivered-order sales metrics with order, customer, item and revenue measures."
+    },
+    {
+      "dataset": "gold_sales_by_state",
+      "zone": "internal",
+      "output_path": "data/gold/internal/gold_sales_by_state.csv",
+      "row_count": 27,
+      "column_count": 8,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "eb85a5d69fa71b9c210dd87348df5d4167bf2889f4fb29d5d449412c09942480",
+      "input_row_counts_json": "{\"silver_customers\": 99441, \"silver_order_items\": 112650, \"silver_orders\": 99441, \"silver_product_categories\": 71, \"silver_products\": 32951}",
+      "notes": "Delivered-order sales aggregated by customer state."
+    },
+    {
+      "dataset": "gold_product_category_revenue",
+      "zone": "internal",
+      "output_path": "data/gold/internal/gold_product_category_revenue.csv",
+      "row_count": 72,
+      "column_count": 9,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "3ac217e301e5d55c70575e5f7bb654025fa07d2f8d721004b99a6e1cb8e68ce7",
+      "input_row_counts_json": "{\"silver_customers\": 99441, \"silver_order_items\": 112650, \"silver_orders\": 99441, \"silver_product_categories\": 71, \"silver_products\": 32951}",
+      "notes": "Delivered-item revenue and contribution metrics by translated product category."
+    },
+    {
+      "dataset": "gold_customer_order_summary",
+      "zone": "internal",
+      "output_path": "data/gold/internal/gold_customer_order_summary.csv",
+      "row_count": 93358,
+      "column_count": 11,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "a187dabd0e39c863c1e30bb0e37b3b362b7f1e4727d9f1d2ee2a77c77d4b37a5",
+      "input_row_counts_json": "{\"silver_customers\": 99441, \"silver_order_items\": 112650, \"silver_orders\": 99441, \"silver_product_categories\": 71, \"silver_products\": 32951}",
+      "notes": "Customer-level delivered-order history and lifetime-spend summary."
+    },
+    {
+      "dataset": "gold_public_sales_dashboard",
+      "zone": "public",
+      "output_path": "data/gold/public/gold_public_sales_dashboard.csv",
+      "row_count": 55872,
+      "column_count": 8,
+      "full_duplicate_rows": 0,
+      "dataset_hash_sha256": "af289f62a1af63757d139040b3a22702bdd2e2be41a98755be913765a0d67967",
+      "input_row_counts_json": "{\"silver_customers\": 99441, \"silver_order_items\": 112650, \"silver_orders\": 99441, \"silver_product_categories\": 71, \"silver_products\": 32951}",
+      "notes": "Public-safe aggregate sales dataset with no customer identifiers or contact fields."
+    }
+  ]
+}
