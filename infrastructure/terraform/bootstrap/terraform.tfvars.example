@@ -1,0 +1,11 @@
+aws_region   = "eu-west-1"
+project_name = "thesis-pac"
+environment  = "bootstrap"
+
+noncurrent_version_retention_days = 90
+
+additional_tags = {
+  Application = "PolicyAsCodeDataPipeline"
+  Purpose     = "MScThesisResearch"
+  Owner       = "Researcher"
+}

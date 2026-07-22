@@ -1,0 +1,9 @@
+aws_region   = "eu-west-1"
+project_name = "thesis-pac"
+environment  = "dev"
+
+additional_tags = {
+  Application = "PolicyAsCodeDataPipeline"
+  Purpose     = "MScThesisResearch"
+  Owner       = "Researcher"
+}
