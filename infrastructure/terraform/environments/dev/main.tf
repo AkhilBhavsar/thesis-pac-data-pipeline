@@ -29,3 +29,9 @@ module "athena" {
 
   bytes_scanned_cutoff_per_query = 1073741824
 }
+
+module "cost_controls" {
+  source = "../../modules/cost_controls"
+
+  aws_account_id = data.aws_caller_identity.current.account_id
+}

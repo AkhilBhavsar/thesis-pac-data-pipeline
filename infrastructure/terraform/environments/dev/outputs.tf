@@ -52,3 +52,13 @@ output "athena_bytes_scanned_cutoff_per_query" {
   description = "Maximum bytes allowed per Athena query."
   value       = module.athena.bytes_scanned_cutoff_per_query
 }
+
+output "monthly_budget_summary" {
+  description = "Existing monthly AWS budget summary."
+  value       = module.cost_controls.monthly_budget_summary
+}
+
+output "zero_spend_budget_summary" {
+  description = "Existing zero-spend AWS budget summary."
+  value       = module.cost_controls.zero_spend_budget_summary
+}
