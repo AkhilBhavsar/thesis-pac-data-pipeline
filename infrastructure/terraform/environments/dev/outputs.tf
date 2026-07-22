@@ -32,3 +32,23 @@ output "data_prefixes" {
   description = "Governed data-lake prefixes."
   value       = module.data_lake.data_prefixes
 }
+
+output "glue_database_names" {
+  description = "Glue databases by governed data zone."
+  value       = module.glue_catalog.database_names
+}
+
+output "athena_workgroup_name" {
+  description = "Governed Athena workgroup."
+  value       = module.athena.workgroup_name
+}
+
+output "athena_workgroup_arn" {
+  description = "Governed Athena workgroup ARN."
+  value       = module.athena.workgroup_arn
+}
+
+output "athena_bytes_scanned_cutoff_per_query" {
+  description = "Maximum bytes allowed per Athena query."
+  value       = module.athena.bytes_scanned_cutoff_per_query
+}
