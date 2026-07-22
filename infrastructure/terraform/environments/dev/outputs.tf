@@ -62,3 +62,18 @@ output "zero_spend_budget_summary" {
   description = "Existing zero-spend AWS budget summary."
   value       = module.cost_controls.zero_spend_budget_summary
 }
+
+output "runtime_iam_role_names" {
+  description = "Runtime IAM role names by AWS service."
+  value       = module.runtime_iam.role_names
+}
+
+output "runtime_iam_role_arns" {
+  description = "Runtime IAM role ARNs by AWS service."
+  value       = module.runtime_iam.role_arns
+}
+
+output "runtime_iam_policy_arns" {
+  description = "Runtime IAM policy ARNs by AWS service."
+  value       = module.runtime_iam.policy_arns
+}

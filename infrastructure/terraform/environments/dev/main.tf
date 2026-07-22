@@ -35,3 +35,17 @@ module "cost_controls" {
 
   aws_account_id = data.aws_caller_identity.current.account_id
 }
+
+module "runtime_iam" {
+  source = "../../modules/runtime_iam"
+
+  project_name   = var.project_name
+  environment    = var.environment
+  aws_region     = var.aws_region
+  aws_account_id = data.aws_caller_identity.current.account_id
+
+  data_lake_bucket_arn      = module.data_lake.data_lake_bucket_arn
+  athena_results_bucket_arn = module.data_lake.athena_results_bucket_arn
+  athena_workgroup_arn      = module.athena.workgroup_arn
+  glue_database_names       = module.glue_catalog.database_names
+}
