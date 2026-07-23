@@ -1,0 +1,424 @@
+{
+  "dataset_count": 9,
+  "datasets": [
+    {
+      "column_count": 5,
+      "columns": [
+        {
+          "name": "customer_id",
+          "type": "string"
+        },
+        {
+          "name": "customer_unique_id",
+          "type": "string"
+        },
+        {
+          "name": "customer_zip_code_prefix",
+          "type": "string"
+        },
+        {
+          "name": "customer_city",
+          "type": "string"
+        },
+        {
+          "name": "customer_state",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_customers/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_customers/",
+      "fields_with_carriage_returns": 0,
+      "fields_with_line_feeds": 0,
+      "local_relative_path": "tables/olist_customers/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "95e51974799b0a3096b895ee28b3c811cb05954575dd38a8646988dba5129a86",
+      "output_size_bytes": 19226367,
+      "physical_line_count": 99441,
+      "records_with_embedded_breaks": 0,
+      "row_count": 99441,
+      "source_filename": "olist_customers_dataset.csv",
+      "source_relative_path": "data/bronze/raw/olist/olist_customers_dataset.csv",
+      "source_sha256": "983a422239e1712ded753b3bf9ecf47dc73f144d306029dcfa99e70a226883d2",
+      "source_size_bytes": 9033957,
+      "table_name": "olist_customers"
+    },
+    {
+      "column_count": 5,
+      "columns": [
+        {
+          "name": "geolocation_zip_code_prefix",
+          "type": "string"
+        },
+        {
+          "name": "geolocation_lat",
+          "type": "string"
+        },
+        {
+          "name": "geolocation_lng",
+          "type": "string"
+        },
+        {
+          "name": "geolocation_city",
+          "type": "string"
+        },
+        {
+          "name": "geolocation_state",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_geolocation/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_geolocation/",
+      "fields_with_carriage_returns": 0,
+      "fields_with_line_feeds": 0,
+      "local_relative_path": "tables/olist_geolocation/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "1416b7b29bb534bfd505c21caa4f3a50d3a64aca12f546afaded8103adcf91ed",
+      "output_size_bytes": 176292513,
+      "physical_line_count": 1000163,
+      "records_with_embedded_breaks": 0,
+      "row_count": 1000163,
+      "source_filename": "olist_geolocation_dataset.csv",
+      "source_relative_path": "data/bronze/raw/olist/olist_geolocation_dataset.csv",
+      "source_sha256": "b514f6fc991b9566aeba02aa5d67e2c3630f034b60a0e05aa0d082a3b66d88d6",
+      "source_size_bytes": 61273883,
+      "table_name": "olist_geolocation"
+    },
+    {
+      "column_count": 7,
+      "columns": [
+        {
+          "name": "order_id",
+          "type": "string"
+        },
+        {
+          "name": "order_item_id",
+          "type": "string"
+        },
+        {
+          "name": "product_id",
+          "type": "string"
+        },
+        {
+          "name": "seller_id",
+          "type": "string"
+        },
+        {
+          "name": "shipping_limit_date",
+          "type": "string"
+        },
+        {
+          "name": "price",
+          "type": "string"
+        },
+        {
+          "name": "freight_value",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_items/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_items/",
+      "fields_with_carriage_returns": 0,
+      "fields_with_line_feeds": 0,
+      "local_relative_path": "tables/olist_order_items/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "801ea28926d4c6c32fabb70061d12515cb4015e71d5a4d07abcf216ce9eb01a5",
+      "output_size_bytes": 27849609,
+      "physical_line_count": 112650,
+      "records_with_embedded_breaks": 0,
+      "row_count": 112650,
+      "source_filename": "olist_order_items_dataset.csv",
+      "source_relative_path": "data/bronze/raw/olist/olist_order_items_dataset.csv",
+      "source_sha256": "0bc4d068c4fe38cbb01bd90e8746e3c613fe7b4baef75fab7b0e329701c3e279",
+      "source_size_bytes": 15438671,
+      "table_name": "olist_order_items"
+    },
+    {
+      "column_count": 5,
+      "columns": [
+        {
+          "name": "order_id",
+          "type": "string"
+        },
+        {
+          "name": "payment_sequential",
+          "type": "string"
+        },
+        {
+          "name": "payment_type",
+          "type": "string"
+        },
+        {
+          "name": "payment_installments",
+          "type": "string"
+        },
+        {
+          "name": "payment_value",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_payments/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_payments/",
+      "fields_with_carriage_returns": 0,
+      "fields_with_line_feeds": 0,
+      "local_relative_path": "tables/olist_order_payments/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "319fcbbe8aebe52fd901f4ca5c1ab56ec53f320658157353fb3264c5f0f53c5b",
+      "output_size_bytes": 15828532,
+      "physical_line_count": 103886,
+      "records_with_embedded_breaks": 0,
+      "row_count": 103886,
+      "source_filename": "olist_order_payments_dataset.csv",
+      "source_relative_path": "data/bronze/raw/olist/olist_order_payments_dataset.csv",
+      "source_sha256": "4f713964f2815dbbaa40b9488268c55aac3627bfce5aa96cf58d1f3616de3cc0",
+      "source_size_bytes": 5777138,
+      "table_name": "olist_order_payments"
+    },
+    {
+      "column_count": 7,
+      "columns": [
+        {
+          "name": "review_id",
+          "type": "string"
+        },
+        {
+          "name": "order_id",
+          "type": "string"
+        },
+        {
+          "name": "review_score",
+          "type": "string"
+        },
+        {
+          "name": "review_comment_title",
+          "type": "string"
+        },
+        {
+          "name": "review_comment_message",
+          "type": "string"
+        },
+        {
+          "name": "review_creation_date",
+          "type": "string"
+        },
+        {
+          "name": "review_answer_timestamp",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_reviews/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_reviews/",
+      "fields_with_carriage_returns": 3852,
+      "fields_with_line_feeds": 3852,
+      "local_relative_path": "tables/olist_order_reviews/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "1821392c3d7d1465321a74cc90a5266b9de735da4a336821430cefbb0bcca439",
+      "output_size_bytes": 28915601,
+      "physical_line_count": 99224,
+      "records_with_embedded_breaks": 3852,
+      "row_count": 99224,
+      "source_filename": "olist_order_reviews_dataset.csv",
+      "source_relative_path": "data/bronze/raw/olist/olist_order_reviews_dataset.csv",
+      "source_sha256": "012b61c7593e34f51fa614efdf802b9c7056ce6aae5307ddb93236e7cfc797d7",
+      "source_size_bytes": 14451670,
+      "table_name": "olist_order_reviews"
+    },
+    {
+      "column_count": 8,
+      "columns": [
+        {
+          "name": "order_id",
+          "type": "string"
+        },
+        {
+          "name": "customer_id",
+          "type": "string"
+        },
+        {
+          "name": "order_status",
+          "type": "string"
+        },
+        {
+          "name": "order_purchase_timestamp",
+          "type": "string"
+        },
+        {
+          "name": "order_approved_at",
+          "type": "string"
+        },
+        {
+          "name": "order_delivered_carrier_date",
+          "type": "string"
+        },
+        {
+          "name": "order_delivered_customer_date",
+          "type": "string"
+        },
+        {
+          "name": "order_estimated_delivery_date",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_orders/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_orders/",
+      "fields_with_carriage_returns": 0,
+      "fields_with_line_feeds": 0,
+      "local_relative_path": "tables/olist_orders/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "7663192efcf3c368c511f2fe4ba050deac20fe987ee874607a2a19c9349dcfeb",
+      "output_size_bytes": 37294918,
+      "physical_line_count": 99441,
+      "records_with_embedded_breaks": 0,
+      "row_count": 99441,
+      "source_filename": "olist_orders_dataset.csv",
+      "source_relative_path": "data/bronze/raw/olist/olist_orders_dataset.csv",
+      "source_sha256": "8df58ef3d2d7e9944010f7beecd9b75367f5588ec6e3c91cec19ae3345ef9ecf",
+      "source_size_bytes": 17654914,
+      "table_name": "olist_orders"
+    },
+    {
+      "column_count": 9,
+      "columns": [
+        {
+          "name": "product_id",
+          "type": "string"
+        },
+        {
+          "name": "product_category_name",
+          "type": "string"
+        },
+        {
+          "name": "product_name_lenght",
+          "type": "string"
+        },
+        {
+          "name": "product_description_lenght",
+          "type": "string"
+        },
+        {
+          "name": "product_photos_qty",
+          "type": "string"
+        },
+        {
+          "name": "product_weight_g",
+          "type": "string"
+        },
+        {
+          "name": "product_length_cm",
+          "type": "string"
+        },
+        {
+          "name": "product_height_cm",
+          "type": "string"
+        },
+        {
+          "name": "product_width_cm",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_products/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_products/",
+      "fields_with_carriage_returns": 0,
+      "fields_with_line_feeds": 0,
+      "local_relative_path": "tables/olist_products/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "308f0e5b9934bc56642cafeda6845b5e4c66d13c8c0e87cf280eae56f494830a",
+      "output_size_bytes": 9158980,
+      "physical_line_count": 32951,
+      "records_with_embedded_breaks": 0,
+      "row_count": 32951,
+      "source_filename": "olist_products_dataset.csv",
+      "source_relative_path": "data/bronze/raw/olist/olist_products_dataset.csv",
+      "source_sha256": "3e6569628a17fbc75fd206ee357b59e20364b9afa90f5b6cd5b4d624c58aa9cc",
+      "source_size_bytes": 2379446,
+      "table_name": "olist_products"
+    },
+    {
+      "column_count": 4,
+      "columns": [
+        {
+          "name": "seller_id",
+          "type": "string"
+        },
+        {
+          "name": "seller_zip_code_prefix",
+          "type": "string"
+        },
+        {
+          "name": "seller_city",
+          "type": "string"
+        },
+        {
+          "name": "seller_state",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_sellers/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_sellers/",
+      "fields_with_carriage_returns": 0,
+      "fields_with_line_feeds": 0,
+      "local_relative_path": "tables/olist_sellers/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "6137a83cc78a851387368203b856d64698b0d4543e7e4db9e6600c1f3bc1ba71",
+      "output_size_bytes": 399776,
+      "physical_line_count": 3095,
+      "records_with_embedded_breaks": 0,
+      "row_count": 3095,
+      "source_filename": "olist_sellers_dataset.csv",
+      "source_relative_path": "data/bronze/raw/olist/olist_sellers_dataset.csv",
+      "source_sha256": "1f643d2b950373b85735e7794b20986f528d7a000432e7c6f9bcbb44d0846a0e",
+      "source_size_bytes": 174703,
+      "table_name": "olist_sellers"
+    },
+    {
+      "column_count": 2,
+      "columns": [
+        {
+          "name": "product_category_name",
+          "type": "string"
+        },
+        {
+          "name": "product_category_name_english",
+          "type": "string"
+        }
+      ],
+      "destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_product_category_name_translation/data.jsonl",
+      "destination_location": "s3://${data_lake_bucket}/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_product_category_name_translation/",
+      "fields_with_carriage_returns": 0,
+      "fields_with_line_feeds": 0,
+      "local_relative_path": "tables/olist_product_category_name_translation/data.jsonl",
+      "output_filename": "data.jsonl",
+      "output_sha256": "6400e34e343472a24da0c0fac471edc0ddedd4526588a5f5fe394b181fa323da",
+      "output_size_bytes": 6890,
+      "physical_line_count": 71,
+      "records_with_embedded_breaks": 0,
+      "row_count": 71,
+      "source_filename": "product_category_name_translation.csv",
+      "source_relative_path": "data/bronze/raw/olist/product_category_name_translation.csv",
+      "source_sha256": "a81f0d1f27b27e7293f761bc79e3ce8f348ee39c4b3ed3e49bde38f478586278",
+      "source_size_bytes": 2613,
+      "table_name": "olist_product_category_name_translation"
+    }
+  ],
+  "destination_prefix": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+  "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+  "manifest_destination_key": "bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/query-compatible-manifest.json",
+  "representation": "athena-json-lines",
+  "schema_version": "1.0",
+  "serde": {
+    "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+    "library": "org.apache.hive.hcatalog.data.JsonSerDe",
+    "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+  },
+  "source_manifest_path": "manifests/bronze/olist/source-manifest.json",
+  "source_manifest_sha256": "0666ef2ad51bc52f9a2d5285c624154e84d7d290d3663b453f6d93f56c0ddbec",
+  "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+  "source_system": "olist",
+  "total_data_rows": 1550922,
+  "total_output_size_bytes": 314973186,
+  "total_records_with_embedded_breaks": 3852,
+  "transformation": {
+    "field_value_policy": "Exact decoded CSV strings are preserved. JSON escaping makes embedded CR and LF characters safe for one-record-per-line processing.",
+    "name": "csv-to-athena-jsonl",
+    "version": "1.0"
+  }
+}
