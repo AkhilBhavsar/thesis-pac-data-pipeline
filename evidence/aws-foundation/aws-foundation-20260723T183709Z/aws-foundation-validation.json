@@ -1,0 +1,2402 @@
+{
+  "checks": [
+    {
+      "details": "Resolved account 522814714524; expected 522814714524.",
+      "evidence": {
+        "Account": "522814714524",
+        "Arn": "arn:aws:iam::522814714524:user/iac-experiment-user",
+        "UserId": "AIDAXTORPOKOBRI2GWZH7"
+      },
+      "name": "AWS account",
+      "status": "PASS"
+    },
+    {
+      "details": "Resolved region eu-west-1; expected eu-west-1.",
+      "evidence": null,
+      "name": "AWS region",
+      "status": "PASS"
+    },
+    {
+      "details": "Terraform configuration is valid.",
+      "evidence": {
+        "diagnostics": [],
+        "error_count": 0,
+        "format_version": "1.0",
+        "valid": true,
+        "warning_count": 0
+      },
+      "name": "Terraform validation",
+      "status": "PASS"
+    },
+    {
+      "details": "No managed-resource or output changes detected.",
+      "evidence": {
+        "exit_code": 0,
+        "managed_changes": [],
+        "output_changes": [],
+        "plan_file": "terraform-drift-plan.txt"
+      },
+      "name": "Terraform drift",
+      "status": "PASS"
+    },
+    {
+      "details": "Found 40 managed resources; expected 40.",
+      "evidence": {
+        "actual": 40,
+        "expected": 40
+      },
+      "name": "Terraform managed-resource count",
+      "status": "PASS"
+    },
+    {
+      "details": "All four public-access controls are enabled for thesis-pac-terraform-state-522814714524-eu-west-1.",
+      "evidence": {
+        "BlockPublicAcls": true,
+        "BlockPublicPolicy": true,
+        "IgnorePublicAcls": true,
+        "RestrictPublicBuckets": true
+      },
+      "name": "Terraform state public-access block",
+      "status": "PASS"
+    },
+    {
+      "details": "Encryption algorithm is AES256; expected AES256.",
+      "evidence": {
+        "ServerSideEncryptionConfiguration": {
+          "Rules": [
+            {
+              "ApplyServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              },
+              "BlockedEncryptionTypes": {
+                "EncryptionType": [
+                  "SSE-C"
+                ]
+              },
+              "BucketKeyEnabled": true
+            }
+          ]
+        }
+      },
+      "name": "Terraform state encryption",
+      "status": "PASS"
+    },
+    {
+      "details": "Versioning status is Enabled.",
+      "evidence": {
+        "Status": "Enabled"
+      },
+      "name": "Terraform state versioning",
+      "status": "PASS"
+    },
+    {
+      "details": "Ownership mode is BucketOwnerEnforced.",
+      "evidence": {
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        }
+      },
+      "name": "Terraform state ownership",
+      "status": "PASS"
+    },
+    {
+      "details": "Bucket policy denies requests when aws:SecureTransport is false.",
+      "evidence": {
+        "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecureTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::thesis-pac-terraform-state-522814714524-eu-west-1/*\",\"arn:aws:s3:::thesis-pac-terraform-state-522814714524-eu-west-1\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+      },
+      "name": "Terraform state HTTPS-only policy",
+      "status": "PASS"
+    },
+    {
+      "details": "{\"abort_days\": 7, \"noncurrent_days\": 90}",
+      "evidence": {
+        "Rules": [
+          {
+            "AbortIncompleteMultipartUpload": {
+              "DaysAfterInitiation": 7
+            },
+            "Filter": {
+              "Prefix": ""
+            },
+            "ID": "retain-noncurrent-state-versions",
+            "NoncurrentVersionExpiration": {
+              "NoncurrentDays": 90
+            },
+            "Status": "Enabled"
+          }
+        ],
+        "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K"
+      },
+      "name": "Terraform state lifecycle",
+      "status": "PASS"
+    },
+    {
+      "details": "All four public-access controls are enabled for thesis-pac-dev-data-lake-522814714524-eu-west-1.",
+      "evidence": {
+        "BlockPublicAcls": true,
+        "BlockPublicPolicy": true,
+        "IgnorePublicAcls": true,
+        "RestrictPublicBuckets": true
+      },
+      "name": "Data lake public-access block",
+      "status": "PASS"
+    },
+    {
+      "details": "Encryption algorithm is AES256; expected AES256.",
+      "evidence": {
+        "ServerSideEncryptionConfiguration": {
+          "Rules": [
+            {
+              "ApplyServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              },
+              "BlockedEncryptionTypes": {
+                "EncryptionType": [
+                  "SSE-C"
+                ]
+              },
+              "BucketKeyEnabled": true
+            }
+          ]
+        }
+      },
+      "name": "Data lake encryption",
+      "status": "PASS"
+    },
+    {
+      "details": "Versioning status is Enabled.",
+      "evidence": {
+        "Status": "Enabled"
+      },
+      "name": "Data lake versioning",
+      "status": "PASS"
+    },
+    {
+      "details": "Ownership mode is BucketOwnerEnforced.",
+      "evidence": {
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        }
+      },
+      "name": "Data lake ownership",
+      "status": "PASS"
+    },
+    {
+      "details": "Bucket policy denies requests when aws:SecureTransport is false.",
+      "evidence": {
+        "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecureTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::thesis-pac-dev-data-lake-522814714524-eu-west-1/*\",\"arn:aws:s3:::thesis-pac-dev-data-lake-522814714524-eu-west-1\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+      },
+      "name": "Data lake HTTPS-only policy",
+      "status": "PASS"
+    },
+    {
+      "details": "{\"abort_days\": 7, \"noncurrent_days\": 90}",
+      "evidence": {
+        "Rules": [
+          {
+            "AbortIncompleteMultipartUpload": {
+              "DaysAfterInitiation": 7
+            },
+            "Filter": {
+              "Prefix": ""
+            },
+            "ID": "retain-previous-data-versions",
+            "NoncurrentVersionExpiration": {
+              "NoncurrentDays": 90
+            },
+            "Status": "Enabled"
+          }
+        ],
+        "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K"
+      },
+      "name": "Data lake lifecycle",
+      "status": "PASS"
+    },
+    {
+      "details": "All four public-access controls are enabled for thesis-pac-dev-athena-results-522814714524-eu-west-1.",
+      "evidence": {
+        "BlockPublicAcls": true,
+        "BlockPublicPolicy": true,
+        "IgnorePublicAcls": true,
+        "RestrictPublicBuckets": true
+      },
+      "name": "Athena results public-access block",
+      "status": "PASS"
+    },
+    {
+      "details": "Encryption algorithm is AES256; expected AES256.",
+      "evidence": {
+        "ServerSideEncryptionConfiguration": {
+          "Rules": [
+            {
+              "ApplyServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              },
+              "BlockedEncryptionTypes": {
+                "EncryptionType": [
+                  "SSE-C"
+                ]
+              },
+              "BucketKeyEnabled": true
+            }
+          ]
+        }
+      },
+      "name": "Athena results encryption",
+      "status": "PASS"
+    },
+    {
+      "details": "Versioning status is Enabled.",
+      "evidence": {
+        "Status": "Enabled"
+      },
+      "name": "Athena results versioning",
+      "status": "PASS"
+    },
+    {
+      "details": "Ownership mode is BucketOwnerEnforced.",
+      "evidence": {
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        }
+      },
+      "name": "Athena results ownership",
+      "status": "PASS"
+    },
+    {
+      "details": "Bucket policy denies requests when aws:SecureTransport is false.",
+      "evidence": {
+        "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecureTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::thesis-pac-dev-athena-results-522814714524-eu-west-1/*\",\"arn:aws:s3:::thesis-pac-dev-athena-results-522814714524-eu-west-1\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+      },
+      "name": "Athena results HTTPS-only policy",
+      "status": "PASS"
+    },
+    {
+      "details": "{\"expiration_days\": 30}",
+      "evidence": {
+        "Rules": [
+          {
+            "AbortIncompleteMultipartUpload": {
+              "DaysAfterInitiation": 7
+            },
+            "Expiration": {
+              "Days": 30
+            },
+            "Filter": {
+              "Prefix": ""
+            },
+            "ID": "expire-athena-query-results",
+            "NoncurrentVersionExpiration": {
+              "NoncurrentDays": 30
+            },
+            "Status": "Enabled"
+          }
+        ],
+        "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K"
+      },
+      "name": "Athena results lifecycle",
+      "status": "PASS"
+    },
+    {
+      "details": "size=150410 bytes, encryption=AES256, versioned=True.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 150410,
+        "ContentType": "application/json",
+        "ETag": "\"02f0f881b8f42c3ed7305904b785a519\"",
+        "LastModified": "2026-07-23T18:19:34+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "eNqUGAhHqf1ZJp4Hp0gz8Wu2moBvg4UF"
+      },
+      "name": "Remote development-state object",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "kReK0Mklu2Q.iiv6J8roG9blhh.3MU9D"
+      },
+      "name": "S3 prefix marker bronze/generated/",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "BJWDl_Mh54dtjPds8hMDHbaZOTeb4wYw"
+      },
+      "name": "S3 prefix marker bronze/raw/olist/",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "89uBNMrsv9tpHyZYgXCxWxUx_00ACV4I"
+      },
+      "name": "S3 prefix marker evidence/",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "YnEgq82VFW1NQuan2GIFJQ35wGvg86kB"
+      },
+      "name": "S3 prefix marker gold/internal/",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "QYrlB2.4HZqg.S18m0XHSYk9RM3wzbHj"
+      },
+      "name": "S3 prefix marker gold/public/",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "kRIO0wLLmaAAuiyiwqC6PDx2WwjQ6syY"
+      },
+      "name": "S3 prefix marker logs/",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "Dw5pQX9ytxf175NC_U8lOw81ufvkQb5y"
+      },
+      "name": "S3 prefix marker quarantine/",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "_7RMPUclkcfRTkylwZlmN37OKABO0Ebw"
+      },
+      "name": "S3 prefix marker scripts/",
+      "status": "PASS"
+    },
+    {
+      "details": "Marker exists with size 0 bytes.",
+      "evidence": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "Cy.RcikYvorI3w37u1NytGJZBo0Wh3Jf"
+      },
+      "name": "S3 prefix marker silver/",
+      "status": "PASS"
+    },
+    {
+      "details": "Resolved database thesis_pac_dev_bronze.",
+      "evidence": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Raw and generated Bronze-zone datasets.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/",
+          "Name": "thesis_pac_dev_bronze",
+          "Parameters": {
+            "data_zone": "bronze",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "name": "Glue database bronze",
+      "status": "PASS"
+    },
+    {
+      "details": "Resolved database thesis_pac_dev_gold_internal.",
+      "evidence": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Governed internal Gold analytics datasets.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/gold/internal/",
+          "Name": "thesis_pac_dev_gold_internal",
+          "Parameters": {
+            "data_zone": "gold_internal",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "name": "Glue database gold_internal",
+      "status": "PASS"
+    },
+    {
+      "details": "Resolved database thesis_pac_dev_gold_public.",
+      "evidence": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Public-safe Gold analytics datasets.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/gold/public/",
+          "Name": "thesis_pac_dev_gold_public",
+          "Parameters": {
+            "data_zone": "gold_public",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "name": "Glue database gold_public",
+      "status": "PASS"
+    },
+    {
+      "details": "Resolved database thesis_pac_dev_quarantine.",
+      "evidence": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Rejected or policy-quarantined pipeline outputs.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/quarantine/",
+          "Name": "thesis_pac_dev_quarantine",
+          "Parameters": {
+            "data_zone": "quarantine",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "name": "Glue database quarantine",
+      "status": "PASS"
+    },
+    {
+      "details": "Resolved database thesis_pac_dev_silver.",
+      "evidence": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Cleaned and standardised Silver-zone datasets.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/silver/",
+          "Name": "thesis_pac_dev_silver",
+          "Parameters": {
+            "data_zone": "silver",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "name": "Glue database silver",
+      "status": "PASS"
+    },
+    {
+      "details": "state=ENABLED, enforced=True, metrics=True, cutoff=1073741824, encryption=SSE_S3.",
+      "evidence": {
+        "WorkGroup": {
+          "Configuration": {
+            "BytesScannedCutoffPerQuery": 1073741824,
+            "EnableMinimumEncryptionConfiguration": false,
+            "EnforceWorkGroupConfiguration": true,
+            "EngineVersion": {
+              "EffectiveEngineVersion": "Athena engine version 3",
+              "SelectedEngineVersion": "AUTO"
+            },
+            "PublishCloudWatchMetricsEnabled": true,
+            "RequesterPaysEnabled": false,
+            "ResultConfiguration": {
+              "EncryptionConfiguration": {
+                "EncryptionOption": "SSE_S3"
+              },
+              "ExpectedBucketOwner": "522814714524",
+              "OutputLocation": "s3://thesis-pac-dev-athena-results-522814714524-eu-west-1/results/"
+            }
+          },
+          "CreationTime": "2026-07-22T19:49:04.185000+01:00",
+          "Description": "Governed Athena workgroup for the cloud-native thesis pipeline.",
+          "Name": "thesis-pac-dev-analytics",
+          "State": "ENABLED"
+        }
+      },
+      "name": "Athena governed workgroup",
+      "status": "PASS"
+    },
+    {
+      "details": "limit=2.0 USD.",
+      "evidence": {
+        "Budget": {
+          "BudgetLimit": {
+            "Amount": "2.0",
+            "Unit": "USD"
+          },
+          "BudgetName": "My Monthly Cost Budget",
+          "BudgetType": "COST",
+          "CalculatedSpend": {
+            "ActualSpend": {
+              "Amount": "0.051",
+              "Unit": "USD"
+            },
+            "ForecastedSpend": {
+              "Amount": "0.051",
+              "Unit": "USD"
+            }
+          },
+          "CostFilters": {},
+          "CostTypes": {
+            "IncludeCredit": false,
+            "IncludeDiscount": true,
+            "IncludeOtherSubscription": true,
+            "IncludeRecurring": true,
+            "IncludeRefund": false,
+            "IncludeSubscription": true,
+            "IncludeSupport": true,
+            "IncludeTax": true,
+            "IncludeUpfront": true,
+            "UseAmortized": false,
+            "UseBlended": false
+          },
+          "HealthStatus": {
+            "LastUpdatedTime": "2026-07-23T12:01:25.980000+01:00",
+            "Status": "HEALTHY"
+          },
+          "LastUpdatedTime": "2026-07-23T12:01:26.474000+01:00",
+          "TimePeriod": {
+            "End": "2087-06-15T01:00:00+01:00",
+            "Start": "2024-12-01T00:00:00+00:00"
+          },
+          "TimeUnit": "MONTHLY"
+        }
+      },
+      "name": "Budget configuration: My Monthly Cost Budget",
+      "status": "PASS"
+    },
+    {
+      "details": "Observed 3 rules.",
+      "evidence": {
+        "Notifications": [
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 100.0
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 85.0
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "FORECASTED",
+            "Threshold": 100.0
+          }
+        ]
+      },
+      "name": "Budget notifications: My Monthly Cost Budget",
+      "status": "PASS"
+    },
+    {
+      "details": "limit=0.01 USD.",
+      "evidence": {
+        "Budget": {
+          "BillingViewArn": "arn:aws:billing::522814714524:billingview/primary",
+          "BudgetLimit": {
+            "Amount": "0.01",
+            "Unit": "USD"
+          },
+          "BudgetName": "My Zero-Spend Budget",
+          "BudgetType": "COST",
+          "CalculatedSpend": {
+            "ActualSpend": {
+              "Amount": "0.051",
+              "Unit": "USD"
+            },
+            "ForecastedSpend": {
+              "Amount": "0.051",
+              "Unit": "USD"
+            }
+          },
+          "HealthStatus": {
+            "LastUpdatedTime": "2026-07-23T11:59:27.013000+01:00",
+            "Status": "HEALTHY"
+          },
+          "LastUpdatedTime": "2026-07-23T11:59:27.413000+01:00",
+          "Metrics": [
+            "UnblendedCost"
+          ],
+          "TimePeriod": {
+            "End": "2087-06-15T01:00:00+01:00",
+            "Start": "2025-09-01T01:00:00+01:00"
+          },
+          "TimeUnit": "MONTHLY"
+        }
+      },
+      "name": "Budget configuration: My Zero-Spend Budget",
+      "status": "PASS"
+    },
+    {
+      "details": "Observed 1 rules.",
+      "evidence": {
+        "Notifications": [
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "ALARM",
+            "NotificationType": "ACTUAL",
+            "Threshold": 0.01,
+            "ThresholdType": "ABSOLUTE_VALUE"
+          }
+        ]
+      },
+      "name": "Budget notifications: My Zero-Spend Budget",
+      "status": "PASS"
+    },
+    {
+      "details": "name=thesis-pac-dev-project-budget, limit=2.00 USD, scope={'Environment': 'dev', 'Project': 'thesis-pac'}.",
+      "evidence": {
+        "Budget": {
+          "BudgetLimit": {
+            "Amount": "2.0",
+            "Unit": "USD"
+          },
+          "BudgetName": "thesis-pac-dev-project-budget",
+          "BudgetType": "COST",
+          "CalculatedSpend": {
+            "ActualSpend": {
+              "Amount": "0.0",
+              "Unit": "USD"
+            }
+          },
+          "FilterExpression": {
+            "And": [
+              {
+                "Tags": {
+                  "Key": "Project",
+                  "MatchOptions": [
+                    "EQUALS"
+                  ],
+                  "Values": [
+                    "thesis-pac"
+                  ]
+                }
+              },
+              {
+                "Tags": {
+                  "Key": "Environment",
+                  "MatchOptions": [
+                    "EQUALS"
+                  ],
+                  "Values": [
+                    "dev"
+                  ]
+                }
+              }
+            ]
+          },
+          "HealthStatus": {
+            "LastUpdatedTime": "2026-07-23T19:19:23.978000+01:00",
+            "Status": "HEALTHY"
+          },
+          "LastUpdatedTime": "2026-07-23T19:19:31.574000+01:00",
+          "Metrics": [
+            "UnblendedCost"
+          ],
+          "TimePeriod": {
+            "End": "2087-06-15T01:00:00+01:00",
+            "Start": "2026-07-01T01:00:00+01:00"
+          },
+          "TimeUnit": "MONTHLY"
+        }
+      },
+      "name": "Project budget configuration",
+      "status": "PASS"
+    },
+    {
+      "details": "Observed the expected five project-budget alert rules.",
+      "evidence": {
+        "Notifications": [
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 0.1,
+            "ThresholdType": "ABSOLUTE_VALUE"
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 100.0
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 50.0
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 80.0
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "FORECASTED",
+            "Threshold": 100.0
+          }
+        ]
+      },
+      "name": "Project budget notifications",
+      "status": "PASS"
+    },
+    {
+      "details": "All four tags are active.",
+      "evidence": {
+        "CostAllocationTags": [
+          {
+            "LastUpdatedDate": "2026-07-23T17:17:21Z",
+            "LastUsedDate": "2026-07-01T00:00:00Z",
+            "Status": "Active",
+            "TagKey": "Environment",
+            "Type": "UserDefined"
+          },
+          {
+            "LastUpdatedDate": "2026-07-23T17:17:21Z",
+            "LastUsedDate": "2026-07-01T00:00:00Z",
+            "Status": "Active",
+            "TagKey": "Application",
+            "Type": "UserDefined"
+          },
+          {
+            "LastUpdatedDate": "2026-07-23T17:17:21Z",
+            "LastUsedDate": "2026-07-01T00:00:00Z",
+            "Status": "Active",
+            "TagKey": "Purpose",
+            "Type": "UserDefined"
+          },
+          {
+            "LastUpdatedDate": "2026-07-23T17:17:21Z",
+            "LastUsedDate": "2026-07-01T00:00:00Z",
+            "Status": "Active",
+            "TagKey": "Project",
+            "Type": "UserDefined"
+          }
+        ]
+      },
+      "name": "Cost-allocation tags",
+      "status": "PASS"
+    },
+    {
+      "details": "Account cost is USD 0.0511758034; monthly account limit is USD 2.00. Zero-spend threshold USD 0.01 has been crossed.",
+      "evidence": {
+        "monthly_limit_usd": 2.0,
+        "service_costs": {
+          "AWS Cost Explorer": 0.04,
+          "AWS Glue": 0.0,
+          "AWS Key Management Service": 0.0,
+          "Amazon DynamoDB": 0.0,
+          "Amazon Simple Storage Service": 0.0011758034,
+          "AmazonCloudWatch": 0.0,
+          "Tax": 0.01
+        },
+        "total_cost_usd": 0.051175803400000004,
+        "zero_spend_threshold_crossed": true,
+        "zero_spend_threshold_usd": 0.01
+      },
+      "name": "Current-month account AWS cost",
+      "status": "PASS"
+    },
+    {
+      "details": "Tagged project cost is USD 0.0000000000; project budget limit is USD 2.00.",
+      "evidence": {
+        "monthly_limit_usd": 2.0,
+        "scope": {
+          "Environment": "dev",
+          "Project": "thesis-pac"
+        },
+        "service_costs": {},
+        "total_cost_usd": 0
+      },
+      "name": "Current-month project AWS cost",
+      "status": "PASS"
+    },
+    {
+      "details": "Role AWSGlueServiceRole-thesis-pac-dev-runtime.",
+      "evidence": {
+        "Statement": [
+          {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "glue.amazonaws.com"
+            },
+            "Sid": "AllowGlueServiceAssumption"
+          }
+        ],
+        "Version": "2012-10-17"
+      },
+      "name": "IAM trust policy: glue",
+      "status": "PASS"
+    },
+    {
+      "details": "Attached policies=['thesis-pac-dev-glue-runtime'].",
+      "evidence": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:aws:iam::522814714524:policy/thesis-pac-dev-glue-runtime",
+            "PolicyName": "thesis-pac-dev-glue-runtime"
+          }
+        ]
+      },
+      "name": "IAM policy attachments: glue",
+      "status": "PASS"
+    },
+    {
+      "details": "Role thesis-pac-dev-lambda-runtime.",
+      "evidence": {
+        "Statement": [
+          {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Sid": "AllowLambdaServiceAssumption"
+          }
+        ],
+        "Version": "2012-10-17"
+      },
+      "name": "IAM trust policy: lambda",
+      "status": "PASS"
+    },
+    {
+      "details": "Attached policies=['AWSLambdaBasicExecutionRole', 'thesis-pac-dev-lambda-runtime'].",
+      "evidence": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:aws:iam::522814714524:policy/thesis-pac-dev-lambda-runtime",
+            "PolicyName": "thesis-pac-dev-lambda-runtime"
+          },
+          {
+            "PolicyArn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+            "PolicyName": "AWSLambdaBasicExecutionRole"
+          }
+        ]
+      },
+      "name": "IAM policy attachments: lambda",
+      "status": "PASS"
+    },
+    {
+      "details": "Role thesis-pac-dev-step-functions-runtime.",
+      "evidence": {
+        "Statement": [
+          {
+            "Action": "sts:AssumeRole",
+            "Condition": {
+              "ArnLike": {
+                "aws:SourceArn": "arn:aws:states:eu-west-1:522814714524:stateMachine:thesis-pac-dev-*"
+              },
+              "StringEquals": {
+                "aws:SourceAccount": "522814714524"
+              }
+            },
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "states.amazonaws.com"
+            },
+            "Sid": "AllowStepFunctionsServiceAssumption"
+          }
+        ],
+        "Version": "2012-10-17"
+      },
+      "name": "IAM trust policy: step_functions",
+      "status": "PASS"
+    },
+    {
+      "details": "Attached policies=['thesis-pac-dev-step-functions-runtime'].",
+      "evidence": {
+        "AttachedPolicies": [
+          {
+            "PolicyArn": "arn:aws:iam::522814714524:policy/thesis-pac-dev-step-functions-runtime",
+            "PolicyName": "thesis-pac-dev-step-functions-runtime"
+          }
+        ]
+      },
+      "name": "IAM policy attachments: step_functions",
+      "status": "PASS"
+    }
+  ],
+  "metadata": {
+    "aws_account": "522814714524",
+    "aws_region": "eu-west-1",
+    "generated_at_utc": "2026-07-23T18:37:09.730081+00:00",
+    "git_branch": "feature/aws-foundation-validation",
+    "git_commit": "daec437a49d55c3a05b7ddfe80143242007c5d9b",
+    "run_id": "aws-foundation-20260723T183709Z"
+  },
+  "raw_evidence": {
+    "athena_workgroup": {
+      "WorkGroup": {
+        "Configuration": {
+          "BytesScannedCutoffPerQuery": 1073741824,
+          "EnableMinimumEncryptionConfiguration": false,
+          "EnforceWorkGroupConfiguration": true,
+          "EngineVersion": {
+            "EffectiveEngineVersion": "Athena engine version 3",
+            "SelectedEngineVersion": "AUTO"
+          },
+          "PublishCloudWatchMetricsEnabled": true,
+          "RequesterPaysEnabled": false,
+          "ResultConfiguration": {
+            "EncryptionConfiguration": {
+              "EncryptionOption": "SSE_S3"
+            },
+            "ExpectedBucketOwner": "522814714524",
+            "OutputLocation": "s3://thesis-pac-dev-athena-results-522814714524-eu-west-1/results/"
+          }
+        },
+        "CreationTime": "2026-07-22T19:49:04.185000+01:00",
+        "Description": "Governed Athena workgroup for the cloud-native thesis pipeline.",
+        "Name": "thesis-pac-dev-analytics",
+        "State": "ENABLED"
+      }
+    },
+    "budgets": {
+      "My Monthly Cost Budget": {
+        "budget": {
+          "Budget": {
+            "BudgetLimit": {
+              "Amount": "2.0",
+              "Unit": "USD"
+            },
+            "BudgetName": "My Monthly Cost Budget",
+            "BudgetType": "COST",
+            "CalculatedSpend": {
+              "ActualSpend": {
+                "Amount": "0.051",
+                "Unit": "USD"
+              },
+              "ForecastedSpend": {
+                "Amount": "0.051",
+                "Unit": "USD"
+              }
+            },
+            "CostFilters": {},
+            "CostTypes": {
+              "IncludeCredit": false,
+              "IncludeDiscount": true,
+              "IncludeOtherSubscription": true,
+              "IncludeRecurring": true,
+              "IncludeRefund": false,
+              "IncludeSubscription": true,
+              "IncludeSupport": true,
+              "IncludeTax": true,
+              "IncludeUpfront": true,
+              "UseAmortized": false,
+              "UseBlended": false
+            },
+            "HealthStatus": {
+              "LastUpdatedTime": "2026-07-23T12:01:25.980000+01:00",
+              "Status": "HEALTHY"
+            },
+            "LastUpdatedTime": "2026-07-23T12:01:26.474000+01:00",
+            "TimePeriod": {
+              "End": "2087-06-15T01:00:00+01:00",
+              "Start": "2024-12-01T00:00:00+00:00"
+            },
+            "TimeUnit": "MONTHLY"
+          }
+        },
+        "notifications": {
+          "Notifications": [
+            {
+              "ComparisonOperator": "GREATER_THAN",
+              "NotificationState": "OK",
+              "NotificationType": "ACTUAL",
+              "Threshold": 100.0
+            },
+            {
+              "ComparisonOperator": "GREATER_THAN",
+              "NotificationState": "OK",
+              "NotificationType": "ACTUAL",
+              "Threshold": 85.0
+            },
+            {
+              "ComparisonOperator": "GREATER_THAN",
+              "NotificationState": "OK",
+              "NotificationType": "FORECASTED",
+              "Threshold": 100.0
+            }
+          ]
+        }
+      },
+      "My Zero-Spend Budget": {
+        "budget": {
+          "Budget": {
+            "BillingViewArn": "arn:aws:billing::522814714524:billingview/primary",
+            "BudgetLimit": {
+              "Amount": "0.01",
+              "Unit": "USD"
+            },
+            "BudgetName": "My Zero-Spend Budget",
+            "BudgetType": "COST",
+            "CalculatedSpend": {
+              "ActualSpend": {
+                "Amount": "0.051",
+                "Unit": "USD"
+              },
+              "ForecastedSpend": {
+                "Amount": "0.051",
+                "Unit": "USD"
+              }
+            },
+            "HealthStatus": {
+              "LastUpdatedTime": "2026-07-23T11:59:27.013000+01:00",
+              "Status": "HEALTHY"
+            },
+            "LastUpdatedTime": "2026-07-23T11:59:27.413000+01:00",
+            "Metrics": [
+              "UnblendedCost"
+            ],
+            "TimePeriod": {
+              "End": "2087-06-15T01:00:00+01:00",
+              "Start": "2025-09-01T01:00:00+01:00"
+            },
+            "TimeUnit": "MONTHLY"
+          }
+        },
+        "notifications": {
+          "Notifications": [
+            {
+              "ComparisonOperator": "GREATER_THAN",
+              "NotificationState": "ALARM",
+              "NotificationType": "ACTUAL",
+              "Threshold": 0.01,
+              "ThresholdType": "ABSOLUTE_VALUE"
+            }
+          ]
+        }
+      }
+    },
+    "cost_allocation_tags": {
+      "CostAllocationTags": [
+        {
+          "LastUpdatedDate": "2026-07-23T17:17:21Z",
+          "LastUsedDate": "2026-07-01T00:00:00Z",
+          "Status": "Active",
+          "TagKey": "Environment",
+          "Type": "UserDefined"
+        },
+        {
+          "LastUpdatedDate": "2026-07-23T17:17:21Z",
+          "LastUsedDate": "2026-07-01T00:00:00Z",
+          "Status": "Active",
+          "TagKey": "Application",
+          "Type": "UserDefined"
+        },
+        {
+          "LastUpdatedDate": "2026-07-23T17:17:21Z",
+          "LastUsedDate": "2026-07-01T00:00:00Z",
+          "Status": "Active",
+          "TagKey": "Purpose",
+          "Type": "UserDefined"
+        },
+        {
+          "LastUpdatedDate": "2026-07-23T17:17:21Z",
+          "LastUsedDate": "2026-07-01T00:00:00Z",
+          "Status": "Active",
+          "TagKey": "Project",
+          "Type": "UserDefined"
+        }
+      ]
+    },
+    "glue_databases": {
+      "bronze": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Raw and generated Bronze-zone datasets.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/",
+          "Name": "thesis_pac_dev_bronze",
+          "Parameters": {
+            "data_zone": "bronze",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "gold_internal": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Governed internal Gold analytics datasets.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/gold/internal/",
+          "Name": "thesis_pac_dev_gold_internal",
+          "Parameters": {
+            "data_zone": "gold_internal",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "gold_public": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Public-safe Gold analytics datasets.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/gold/public/",
+          "Name": "thesis_pac_dev_gold_public",
+          "Parameters": {
+            "data_zone": "gold_public",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "quarantine": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Rejected or policy-quarantined pipeline outputs.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/quarantine/",
+          "Name": "thesis_pac_dev_quarantine",
+          "Parameters": {
+            "data_zone": "quarantine",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      },
+      "silver": {
+        "Database": {
+          "CatalogId": "522814714524",
+          "CreateTableDefaultPermissions": [
+            {
+              "Permissions": [
+                "ALL"
+              ],
+              "Principal": {
+                "DataLakePrincipalIdentifier": "IAM_ALLOWED_PRINCIPALS"
+              }
+            }
+          ],
+          "CreateTime": "2026-07-22T19:49:04+01:00",
+          "Description": "Cleaned and standardised Silver-zone datasets.",
+          "LocationUri": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/silver/",
+          "Name": "thesis_pac_dev_silver",
+          "Parameters": {
+            "data_zone": "silver",
+            "environment": "dev",
+            "managed_by": "terraform",
+            "project": "thesis-pac"
+          }
+        }
+      }
+    },
+    "iam": {
+      "glue": {
+        "attached_policies": {
+          "AttachedPolicies": [
+            {
+              "PolicyArn": "arn:aws:iam::522814714524:policy/thesis-pac-dev-glue-runtime",
+              "PolicyName": "thesis-pac-dev-glue-runtime"
+            }
+          ]
+        },
+        "role": {
+          "Role": {
+            "Arn": "arn:aws:iam::522814714524:role/AWSGlueServiceRole-thesis-pac-dev-runtime",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "glue.amazonaws.com"
+                  },
+                  "Sid": "AllowGlueServiceAssumption"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "2026-07-22T21:04:04+00:00",
+            "Description": "Execution role for thesis Glue ETL jobs.",
+            "MaxSessionDuration": 3600,
+            "Path": "/",
+            "RoleId": "AROAXTORPOKOGPZJ6FTO4",
+            "RoleLastUsed": {},
+            "RoleName": "AWSGlueServiceRole-thesis-pac-dev-runtime",
+            "Tags": [
+              {
+                "Key": "Environment",
+                "Value": "dev"
+              },
+              {
+                "Key": "ManagedBy",
+                "Value": "Terraform"
+              },
+              {
+                "Key": "Owner",
+                "Value": "Researcher"
+              },
+              {
+                "Key": "Project",
+                "Value": "thesis-pac"
+              },
+              {
+                "Key": "Purpose",
+                "Value": "MScThesisResearch"
+              },
+              {
+                "Key": "ThesisComponent",
+                "Value": "CloudDataPipeline"
+              },
+              {
+                "Key": "Application",
+                "Value": "PolicyAsCodeDataPipeline"
+              }
+            ]
+          }
+        }
+      },
+      "lambda": {
+        "attached_policies": {
+          "AttachedPolicies": [
+            {
+              "PolicyArn": "arn:aws:iam::522814714524:policy/thesis-pac-dev-lambda-runtime",
+              "PolicyName": "thesis-pac-dev-lambda-runtime"
+            },
+            {
+              "PolicyArn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              "PolicyName": "AWSLambdaBasicExecutionRole"
+            }
+          ]
+        },
+        "role": {
+          "Role": {
+            "Arn": "arn:aws:iam::522814714524:role/thesis-pac-dev-lambda-runtime",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                  },
+                  "Sid": "AllowLambdaServiceAssumption"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "2026-07-22T21:04:03+00:00",
+            "Description": "Execution role for thesis validation and remediation Lambda functions.",
+            "MaxSessionDuration": 3600,
+            "Path": "/",
+            "RoleId": "AROAXTORPOKOIT6DOKXCW",
+            "RoleLastUsed": {},
+            "RoleName": "thesis-pac-dev-lambda-runtime",
+            "Tags": [
+              {
+                "Key": "Owner",
+                "Value": "Researcher"
+              },
+              {
+                "Key": "Project",
+                "Value": "thesis-pac"
+              },
+              {
+                "Key": "Purpose",
+                "Value": "MScThesisResearch"
+              },
+              {
+                "Key": "ThesisComponent",
+                "Value": "CloudDataPipeline"
+              },
+              {
+                "Key": "Application",
+                "Value": "PolicyAsCodeDataPipeline"
+              },
+              {
+                "Key": "Environment",
+                "Value": "dev"
+              },
+              {
+                "Key": "ManagedBy",
+                "Value": "Terraform"
+              }
+            ]
+          }
+        }
+      },
+      "step_functions": {
+        "attached_policies": {
+          "AttachedPolicies": [
+            {
+              "PolicyArn": "arn:aws:iam::522814714524:policy/thesis-pac-dev-step-functions-runtime",
+              "PolicyName": "thesis-pac-dev-step-functions-runtime"
+            }
+          ]
+        },
+        "role": {
+          "Role": {
+            "Arn": "arn:aws:iam::522814714524:role/thesis-pac-dev-step-functions-runtime",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Condition": {
+                    "ArnLike": {
+                      "aws:SourceArn": "arn:aws:states:eu-west-1:522814714524:stateMachine:thesis-pac-dev-*"
+                    },
+                    "StringEquals": {
+                      "aws:SourceAccount": "522814714524"
+                    }
+                  },
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "states.amazonaws.com"
+                  },
+                  "Sid": "AllowStepFunctionsServiceAssumption"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "2026-07-22T21:04:03+00:00",
+            "Description": "Execution role for thesis pipeline Step Functions workflows.",
+            "MaxSessionDuration": 3600,
+            "Path": "/",
+            "RoleId": "AROAXTORPOKOHVVMM5UU5",
+            "RoleLastUsed": {},
+            "RoleName": "thesis-pac-dev-step-functions-runtime",
+            "Tags": [
+              {
+                "Key": "ManagedBy",
+                "Value": "Terraform"
+              },
+              {
+                "Key": "Owner",
+                "Value": "Researcher"
+              },
+              {
+                "Key": "Project",
+                "Value": "thesis-pac"
+              },
+              {
+                "Key": "Purpose",
+                "Value": "MScThesisResearch"
+              },
+              {
+                "Key": "ThesisComponent",
+                "Value": "CloudDataPipeline"
+              },
+              {
+                "Key": "Application",
+                "Value": "PolicyAsCodeDataPipeline"
+              },
+              {
+                "Key": "Environment",
+                "Value": "dev"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "identity": {
+      "Account": "522814714524",
+      "Arn": "arn:aws:iam::522814714524:user/iac-experiment-user",
+      "UserId": "AIDAXTORPOKOBRI2GWZH7"
+    },
+    "monthly_account_cost": {
+      "DimensionValueAttributes": [],
+      "GroupDefinitions": [
+        {
+          "Key": "SERVICE",
+          "Type": "DIMENSION"
+        }
+      ],
+      "ResultsByTime": [
+        {
+          "Estimated": true,
+          "Groups": [
+            {
+              "Keys": [
+                "AWS Cost Explorer"
+              ],
+              "Metrics": {
+                "UnblendedCost": {
+                  "Amount": "0.04",
+                  "Unit": "USD"
+                }
+              }
+            },
+            {
+              "Keys": [
+                "AWS Glue"
+              ],
+              "Metrics": {
+                "UnblendedCost": {
+                  "Amount": "0",
+                  "Unit": "USD"
+                }
+              }
+            },
+            {
+              "Keys": [
+                "AWS Key Management Service"
+              ],
+              "Metrics": {
+                "UnblendedCost": {
+                  "Amount": "0",
+                  "Unit": "USD"
+                }
+              }
+            },
+            {
+              "Keys": [
+                "Amazon DynamoDB"
+              ],
+              "Metrics": {
+                "UnblendedCost": {
+                  "Amount": "0",
+                  "Unit": "USD"
+                }
+              }
+            },
+            {
+              "Keys": [
+                "Amazon Simple Storage Service"
+              ],
+              "Metrics": {
+                "UnblendedCost": {
+                  "Amount": "0.0011758034",
+                  "Unit": "USD"
+                }
+              }
+            },
+            {
+              "Keys": [
+                "AmazonCloudWatch"
+              ],
+              "Metrics": {
+                "UnblendedCost": {
+                  "Amount": "0",
+                  "Unit": "USD"
+                }
+              }
+            },
+            {
+              "Keys": [
+                "Tax"
+              ],
+              "Metrics": {
+                "UnblendedCost": {
+                  "Amount": "0.01",
+                  "Unit": "USD"
+                }
+              }
+            }
+          ],
+          "TimePeriod": {
+            "End": "2026-07-24",
+            "Start": "2026-07-01"
+          },
+          "Total": {}
+        }
+      ]
+    },
+    "monthly_project_cost": {
+      "filter": {
+        "And": [
+          {
+            "Tags": {
+              "Key": "Project",
+              "MatchOptions": [
+                "EQUALS"
+              ],
+              "Values": [
+                "thesis-pac"
+              ]
+            }
+          },
+          {
+            "Tags": {
+              "Key": "Environment",
+              "MatchOptions": [
+                "EQUALS"
+              ],
+              "Values": [
+                "dev"
+              ]
+            }
+          }
+        ]
+      },
+      "response": {
+        "DimensionValueAttributes": [],
+        "GroupDefinitions": [
+          {
+            "Key": "SERVICE",
+            "Type": "DIMENSION"
+          }
+        ],
+        "ResultsByTime": [
+          {
+            "Estimated": true,
+            "Groups": [],
+            "TimePeriod": {
+              "End": "2026-07-24",
+              "Start": "2026-07-01"
+            },
+            "Total": {
+              "UnblendedCost": {
+                "Amount": "0",
+                "Unit": "USD"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "prefix_markers": {
+      "bronze/generated/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "kReK0Mklu2Q.iiv6J8roG9blhh.3MU9D"
+      },
+      "bronze/raw/olist/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "BJWDl_Mh54dtjPds8hMDHbaZOTeb4wYw"
+      },
+      "evidence/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "89uBNMrsv9tpHyZYgXCxWxUx_00ACV4I"
+      },
+      "gold/internal/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "YnEgq82VFW1NQuan2GIFJQ35wGvg86kB"
+      },
+      "gold/public/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "QYrlB2.4HZqg.S18m0XHSYk9RM3wzbHj"
+      },
+      "logs/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "kRIO0wLLmaAAuiyiwqC6PDx2WwjQ6syY"
+      },
+      "quarantine/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "Dw5pQX9ytxf175NC_U8lOw81ufvkQb5y"
+      },
+      "scripts/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "_7RMPUclkcfRTkylwZlmN37OKABO0Ebw"
+      },
+      "silver/": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "application/x-directory",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "2026-07-22T17:34:01+00:00",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "TagCount": 7,
+        "VersionId": "Cy.RcikYvorI3w37u1NytGJZBo0Wh3Jf"
+      }
+    },
+    "project_budget": {
+      "budget": {
+        "Budget": {
+          "BudgetLimit": {
+            "Amount": "2.0",
+            "Unit": "USD"
+          },
+          "BudgetName": "thesis-pac-dev-project-budget",
+          "BudgetType": "COST",
+          "CalculatedSpend": {
+            "ActualSpend": {
+              "Amount": "0.0",
+              "Unit": "USD"
+            }
+          },
+          "FilterExpression": {
+            "And": [
+              {
+                "Tags": {
+                  "Key": "Project",
+                  "MatchOptions": [
+                    "EQUALS"
+                  ],
+                  "Values": [
+                    "thesis-pac"
+                  ]
+                }
+              },
+              {
+                "Tags": {
+                  "Key": "Environment",
+                  "MatchOptions": [
+                    "EQUALS"
+                  ],
+                  "Values": [
+                    "dev"
+                  ]
+                }
+              }
+            ]
+          },
+          "HealthStatus": {
+            "LastUpdatedTime": "2026-07-23T19:19:23.978000+01:00",
+            "Status": "HEALTHY"
+          },
+          "LastUpdatedTime": "2026-07-23T19:19:31.574000+01:00",
+          "Metrics": [
+            "UnblendedCost"
+          ],
+          "TimePeriod": {
+            "End": "2087-06-15T01:00:00+01:00",
+            "Start": "2026-07-01T01:00:00+01:00"
+          },
+          "TimeUnit": "MONTHLY"
+        }
+      },
+      "notifications": {
+        "Notifications": [
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 0.1,
+            "ThresholdType": "ABSOLUTE_VALUE"
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 100.0
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 50.0
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "ACTUAL",
+            "Threshold": 80.0
+          },
+          {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "OK",
+            "NotificationType": "FORECASTED",
+            "Threshold": 100.0
+          }
+        ]
+      }
+    },
+    "s3": {
+      "Athena results": {
+        "bucket": "thesis-pac-dev-athena-results-522814714524-eu-west-1",
+        "encryption": {
+          "ServerSideEncryptionConfiguration": {
+            "Rules": [
+              {
+                "ApplyServerSideEncryptionByDefault": {
+                  "SSEAlgorithm": "AES256"
+                },
+                "BlockedEncryptionTypes": {
+                  "EncryptionType": [
+                    "SSE-C"
+                  ]
+                },
+                "BucketKeyEnabled": true
+              }
+            ]
+          }
+        },
+        "lifecycle": {
+          "Rules": [
+            {
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 7
+              },
+              "Expiration": {
+                "Days": 30
+              },
+              "Filter": {
+                "Prefix": ""
+              },
+              "ID": "expire-athena-query-results",
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 30
+              },
+              "Status": "Enabled"
+            }
+          ],
+          "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K"
+        },
+        "ownership": {
+          "OwnershipControls": {
+            "Rules": [
+              {
+                "ObjectOwnership": "BucketOwnerEnforced"
+              }
+            ]
+          }
+        },
+        "policy": {
+          "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecureTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::thesis-pac-dev-athena-results-522814714524-eu-west-1/*\",\"arn:aws:s3:::thesis-pac-dev-athena-results-522814714524-eu-west-1\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+        },
+        "public_access": {
+          "PublicAccessBlockConfiguration": {
+            "BlockPublicAcls": true,
+            "BlockPublicPolicy": true,
+            "IgnorePublicAcls": true,
+            "RestrictPublicBuckets": true
+          }
+        },
+        "versioning": {
+          "Status": "Enabled"
+        }
+      },
+      "Data lake": {
+        "bucket": "thesis-pac-dev-data-lake-522814714524-eu-west-1",
+        "encryption": {
+          "ServerSideEncryptionConfiguration": {
+            "Rules": [
+              {
+                "ApplyServerSideEncryptionByDefault": {
+                  "SSEAlgorithm": "AES256"
+                },
+                "BlockedEncryptionTypes": {
+                  "EncryptionType": [
+                    "SSE-C"
+                  ]
+                },
+                "BucketKeyEnabled": true
+              }
+            ]
+          }
+        },
+        "lifecycle": {
+          "Rules": [
+            {
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 7
+              },
+              "Filter": {
+                "Prefix": ""
+              },
+              "ID": "retain-previous-data-versions",
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 90
+              },
+              "Status": "Enabled"
+            }
+          ],
+          "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K"
+        },
+        "ownership": {
+          "OwnershipControls": {
+            "Rules": [
+              {
+                "ObjectOwnership": "BucketOwnerEnforced"
+              }
+            ]
+          }
+        },
+        "policy": {
+          "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecureTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::thesis-pac-dev-data-lake-522814714524-eu-west-1/*\",\"arn:aws:s3:::thesis-pac-dev-data-lake-522814714524-eu-west-1\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+        },
+        "public_access": {
+          "PublicAccessBlockConfiguration": {
+            "BlockPublicAcls": true,
+            "BlockPublicPolicy": true,
+            "IgnorePublicAcls": true,
+            "RestrictPublicBuckets": true
+          }
+        },
+        "versioning": {
+          "Status": "Enabled"
+        }
+      },
+      "Terraform state": {
+        "bucket": "thesis-pac-terraform-state-522814714524-eu-west-1",
+        "encryption": {
+          "ServerSideEncryptionConfiguration": {
+            "Rules": [
+              {
+                "ApplyServerSideEncryptionByDefault": {
+                  "SSEAlgorithm": "AES256"
+                },
+                "BlockedEncryptionTypes": {
+                  "EncryptionType": [
+                    "SSE-C"
+                  ]
+                },
+                "BucketKeyEnabled": true
+              }
+            ]
+          }
+        },
+        "lifecycle": {
+          "Rules": [
+            {
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 7
+              },
+              "Filter": {
+                "Prefix": ""
+              },
+              "ID": "retain-noncurrent-state-versions",
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 90
+              },
+              "Status": "Enabled"
+            }
+          ],
+          "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K"
+        },
+        "ownership": {
+          "OwnershipControls": {
+            "Rules": [
+              {
+                "ObjectOwnership": "BucketOwnerEnforced"
+              }
+            ]
+          }
+        },
+        "policy": {
+          "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecureTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::thesis-pac-terraform-state-522814714524-eu-west-1/*\",\"arn:aws:s3:::thesis-pac-terraform-state-522814714524-eu-west-1\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+        },
+        "public_access": {
+          "PublicAccessBlockConfiguration": {
+            "BlockPublicAcls": true,
+            "BlockPublicPolicy": true,
+            "IgnorePublicAcls": true,
+            "RestrictPublicBuckets": true
+          }
+        },
+        "versioning": {
+          "Status": "Enabled"
+        }
+      }
+    },
+    "terraform_outputs": {
+      "athena_bytes_scanned_cutoff_per_query": {
+        "sensitive": false,
+        "type": "number",
+        "value": 1073741824
+      },
+      "athena_results_bucket_name": {
+        "sensitive": false,
+        "type": "string",
+        "value": "thesis-pac-dev-athena-results-522814714524-eu-west-1"
+      },
+      "athena_results_location": {
+        "sensitive": false,
+        "type": "string",
+        "value": "s3://thesis-pac-dev-athena-results-522814714524-eu-west-1/results/"
+      },
+      "athena_workgroup_arn": {
+        "sensitive": false,
+        "type": "string",
+        "value": "arn:aws:athena:eu-west-1:522814714524:workgroup/thesis-pac-dev-analytics"
+      },
+      "athena_workgroup_name": {
+        "sensitive": false,
+        "type": "string",
+        "value": "thesis-pac-dev-analytics"
+      },
+      "aws_account_id": {
+        "sensitive": false,
+        "type": "string",
+        "value": "522814714524"
+      },
+      "aws_region": {
+        "sensitive": false,
+        "type": "string",
+        "value": "eu-west-1"
+      },
+      "data_lake_bucket_arn": {
+        "sensitive": false,
+        "type": "string",
+        "value": "arn:aws:s3:::thesis-pac-dev-data-lake-522814714524-eu-west-1"
+      },
+      "data_lake_bucket_name": {
+        "sensitive": false,
+        "type": "string",
+        "value": "thesis-pac-dev-data-lake-522814714524-eu-west-1"
+      },
+      "data_prefixes": {
+        "sensitive": false,
+        "type": [
+          "list",
+          "string"
+        ],
+        "value": [
+          "bronze/generated",
+          "bronze/raw/olist",
+          "evidence",
+          "gold/internal",
+          "gold/public",
+          "logs",
+          "quarantine",
+          "scripts",
+          "silver"
+        ]
+      },
+      "glue_database_names": {
+        "sensitive": false,
+        "type": [
+          "object",
+          {
+            "bronze": "string",
+            "gold_internal": "string",
+            "gold_public": "string",
+            "quarantine": "string",
+            "silver": "string"
+          }
+        ],
+        "value": {
+          "bronze": "thesis_pac_dev_bronze",
+          "gold_internal": "thesis_pac_dev_gold_internal",
+          "gold_public": "thesis_pac_dev_gold_public",
+          "quarantine": "thesis_pac_dev_quarantine",
+          "silver": "thesis_pac_dev_silver"
+        }
+      },
+      "monthly_budget_summary": {
+        "sensitive": false,
+        "type": [
+          "object",
+          {
+            "budget_exceeded": "bool",
+            "budget_type": "string",
+            "limit_amount": "number",
+            "limit_unit": "string",
+            "name": "string"
+          }
+        ],
+        "value": {
+          "budget_exceeded": false,
+          "budget_type": "COST",
+          "limit_amount": 2,
+          "limit_unit": "USD",
+          "name": "My Monthly Cost Budget"
+        }
+      },
+      "project_budget_summary": {
+        "sensitive": false,
+        "type": [
+          "object",
+          {
+            "arn": "string",
+            "cost_scope": [
+              "object",
+              {
+                "Environment": "string",
+                "Project": "string"
+              }
+            ],
+            "monthly_limit_usd": "number",
+            "name": "string"
+          }
+        ],
+        "value": {
+          "arn": "arn:aws:budgets::522814714524:budget/thesis-pac-dev-project-budget",
+          "cost_scope": {
+            "Environment": "dev",
+            "Project": "thesis-pac"
+          },
+          "monthly_limit_usd": 2,
+          "name": "thesis-pac-dev-project-budget"
+        }
+      },
+      "runtime_iam_policy_arns": {
+        "sensitive": false,
+        "type": [
+          "object",
+          {
+            "glue": "string",
+            "lambda": "string",
+            "step_functions": "string"
+          }
+        ],
+        "value": {
+          "glue": "arn:aws:iam::522814714524:policy/thesis-pac-dev-glue-runtime",
+          "lambda": "arn:aws:iam::522814714524:policy/thesis-pac-dev-lambda-runtime",
+          "step_functions": "arn:aws:iam::522814714524:policy/thesis-pac-dev-step-functions-runtime"
+        }
+      },
+      "runtime_iam_role_arns": {
+        "sensitive": false,
+        "type": [
+          "object",
+          {
+            "glue": "string",
+            "lambda": "string",
+            "step_functions": "string"
+          }
+        ],
+        "value": {
+          "glue": "arn:aws:iam::522814714524:role/AWSGlueServiceRole-thesis-pac-dev-runtime",
+          "lambda": "arn:aws:iam::522814714524:role/thesis-pac-dev-lambda-runtime",
+          "step_functions": "arn:aws:iam::522814714524:role/thesis-pac-dev-step-functions-runtime"
+        }
+      },
+      "runtime_iam_role_names": {
+        "sensitive": false,
+        "type": [
+          "object",
+          {
+            "glue": "string",
+            "lambda": "string",
+            "step_functions": "string"
+          }
+        ],
+        "value": {
+          "glue": "AWSGlueServiceRole-thesis-pac-dev-runtime",
+          "lambda": "thesis-pac-dev-lambda-runtime",
+          "step_functions": "thesis-pac-dev-step-functions-runtime"
+        }
+      },
+      "zero_spend_budget_summary": {
+        "sensitive": false,
+        "type": [
+          "object",
+          {
+            "budget_exceeded": "bool",
+            "budget_type": "string",
+            "limit_amount": "number",
+            "limit_unit": "string",
+            "name": "string"
+          }
+        ],
+        "value": {
+          "budget_exceeded": true,
+          "budget_type": "COST",
+          "limit_amount": 0.01,
+          "limit_unit": "USD",
+          "name": "My Zero-Spend Budget"
+        }
+      }
+    },
+    "terraform_plan": {
+      "exit_code": 0,
+      "managed_changes": [],
+      "output_changes": []
+    },
+    "terraform_state": [
+      "data.aws_caller_identity.current",
+      "data.aws_partition.current",
+      "module.athena.aws_athena_workgroup.this",
+      "module.cost_controls.data.aws_budgets_budget.monthly_cost",
+      "module.cost_controls.data.aws_budgets_budget.zero_spend",
+      "module.data_lake.data.aws_iam_policy_document.athena_results",
+      "module.data_lake.data.aws_iam_policy_document.data_lake",
+      "module.data_lake.aws_s3_bucket.athena_results",
+      "module.data_lake.aws_s3_bucket.data_lake",
+      "module.data_lake.aws_s3_bucket_lifecycle_configuration.athena_results",
+      "module.data_lake.aws_s3_bucket_lifecycle_configuration.data_lake",
+      "module.data_lake.aws_s3_bucket_ownership_controls.athena_results",
+      "module.data_lake.aws_s3_bucket_ownership_controls.data_lake",
+      "module.data_lake.aws_s3_bucket_policy.athena_results",
+      "module.data_lake.aws_s3_bucket_policy.data_lake",
+      "module.data_lake.aws_s3_bucket_public_access_block.athena_results",
+      "module.data_lake.aws_s3_bucket_public_access_block.data_lake",
+      "module.data_lake.aws_s3_bucket_server_side_encryption_configuration.athena_results",
+      "module.data_lake.aws_s3_bucket_server_side_encryption_configuration.data_lake",
+      "module.data_lake.aws_s3_bucket_versioning.athena_results",
+      "module.data_lake.aws_s3_bucket_versioning.data_lake",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"bronze/generated\"]",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"bronze/raw/olist\"]",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"evidence\"]",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"gold/internal\"]",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"gold/public\"]",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"logs\"]",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"quarantine\"]",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"scripts\"]",
+      "module.data_lake.aws_s3_object.data_prefix_markers[\"silver\"]",
+      "module.glue_catalog.aws_glue_catalog_database.this[\"bronze\"]",
+      "module.glue_catalog.aws_glue_catalog_database.this[\"gold_internal\"]",
+      "module.glue_catalog.aws_glue_catalog_database.this[\"gold_public\"]",
+      "module.glue_catalog.aws_glue_catalog_database.this[\"quarantine\"]",
+      "module.glue_catalog.aws_glue_catalog_database.this[\"silver\"]",
+      "module.project_budget.aws_budgets_budget.this",
+      "module.runtime_iam.data.aws_iam_policy_document.glue_assume_role",
+      "module.runtime_iam.data.aws_iam_policy_document.glue_runtime",
+      "module.runtime_iam.data.aws_iam_policy_document.lambda_assume_role",
+      "module.runtime_iam.data.aws_iam_policy_document.lambda_runtime",
+      "module.runtime_iam.data.aws_iam_policy_document.step_functions_assume_role",
+      "module.runtime_iam.data.aws_iam_policy_document.step_functions_runtime",
+      "module.runtime_iam.data.aws_partition.current",
+      "module.runtime_iam.aws_iam_policy.glue_runtime",
+      "module.runtime_iam.aws_iam_policy.lambda_runtime",
+      "module.runtime_iam.aws_iam_policy.step_functions_runtime",
+      "module.runtime_iam.aws_iam_role.glue_runtime",
+      "module.runtime_iam.aws_iam_role.lambda_runtime",
+      "module.runtime_iam.aws_iam_role.step_functions_runtime",
+      "module.runtime_iam.aws_iam_role_policy_attachment.glue_runtime",
+      "module.runtime_iam.aws_iam_role_policy_attachment.lambda_basic_logging",
+      "module.runtime_iam.aws_iam_role_policy_attachment.lambda_runtime",
+      "module.runtime_iam.aws_iam_role_policy_attachment.step_functions_runtime"
+    ],
+    "terraform_state_object": {
+      "AcceptRanges": "bytes",
+      "ContentLength": 150410,
+      "ContentType": "application/json",
+      "ETag": "\"02f0f881b8f42c3ed7305904b785a519\"",
+      "LastModified": "2026-07-23T18:19:34+00:00",
+      "Metadata": {},
+      "ServerSideEncryption": "AES256",
+      "VersionId": "eNqUGAhHqf1ZJp4Hp0gz8Wu2moBvg4UF"
+    },
+    "terraform_validate": {
+      "diagnostics": [],
+      "error_count": 0,
+      "format_version": "1.0",
+      "valid": true,
+      "warning_count": 0
+    }
+  },
+  "summary": {
+    "failed": 0,
+    "overall_status": "PASS",
+    "passed": 54,
+    "pending": 0,
+    "total": 54
+  }
+}
