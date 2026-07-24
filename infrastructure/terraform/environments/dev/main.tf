@@ -17,6 +17,10 @@ module "glue_catalog" {
   environment           = var.environment
   aws_account_id        = data.aws_caller_identity.current.account_id
   data_lake_bucket_name = module.data_lake.data_lake_bucket_name
+
+  bronze_query_compatible_manifest = (
+    local.bronze_query_compatible_manifest
+  )
 }
 
 module "athena" {
