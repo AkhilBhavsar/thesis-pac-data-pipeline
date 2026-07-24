@@ -1,0 +1,534 @@
+{
+  "athena": {
+    "multiline_validation": {
+      "data_scanned_bytes": 28915600,
+      "engine_version": "Athena engine version 3",
+      "observed_records_with_breaks": 3852,
+      "output_location": "s3://thesis-pac-dev-athena-results-522814714524-eu-west-1/results/aa85f57e-8d82-4146-8ce1-a6642188050e.csv",
+      "query_id": "aa85f57e-8d82-4146-8ce1-a6642188050e",
+      "sql": "SELECT COUNT(*) AS records_with_embedded_breaks\nFROM \"thesis_pac_dev_bronze\".\"olist_order_reviews\"\nWHERE\n  strpos(coalesce(\"review_id\", ''), chr(10)) > 0\n  OR strpos(coalesce(\"review_id\", ''), chr(13)) > 0\n  OR strpos(coalesce(\"order_id\", ''), chr(10)) > 0\n  OR strpos(coalesce(\"order_id\", ''), chr(13)) > 0\n  OR strpos(coalesce(\"review_score\", ''), chr(10)) > 0\n  OR strpos(coalesce(\"review_score\", ''), chr(13)) > 0\n  OR strpos(coalesce(\"review_comment_title\", ''), chr(10)) > 0\n  OR strpos(coalesce(\"review_comment_title\", ''), chr(13)) > 0\n  OR strpos(coalesce(\"review_comment_message\", ''), chr(10)) > 0\n  OR strpos(coalesce(\"review_comment_message\", ''), chr(13)) > 0\n  OR strpos(coalesce(\"review_creation_date\", ''), chr(10)) > 0\n  OR strpos(coalesce(\"review_creation_date\", ''), chr(13)) > 0\n  OR strpos(coalesce(\"review_answer_timestamp\", ''), chr(10)) > 0\n  OR strpos(coalesce(\"review_answer_timestamp\", ''), chr(13)) > 0",
+      "state": "SUCCEEDED",
+      "total_execution_time_millis": 1432
+    },
+    "row_count_validation": {
+      "data_scanned_bytes": 314973183,
+      "engine_version": "Athena engine version 3",
+      "observed_counts": {
+        "olist_customers": 99441,
+        "olist_geolocation": 1000163,
+        "olist_order_items": 112650,
+        "olist_order_payments": 103886,
+        "olist_order_reviews": 99224,
+        "olist_orders": 99441,
+        "olist_product_category_name_translation": 71,
+        "olist_products": 32951,
+        "olist_sellers": 3095
+      },
+      "observed_total_rows": 1550922,
+      "output_location": "s3://thesis-pac-dev-athena-results-522814714524-eu-west-1/results/a0cc757a-2924-4893-a40e-8e618eb0f963.csv",
+      "query_id": "a0cc757a-2924-4893-a40e-8e618eb0f963",
+      "sql": "SELECT 'olist_customers' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_customers\"\nUNION ALL\nSELECT 'olist_geolocation' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_geolocation\"\nUNION ALL\nSELECT 'olist_order_items' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_order_items\"\nUNION ALL\nSELECT 'olist_order_payments' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_order_payments\"\nUNION ALL\nSELECT 'olist_order_reviews' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_order_reviews\"\nUNION ALL\nSELECT 'olist_orders' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_orders\"\nUNION ALL\nSELECT 'olist_products' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_products\"\nUNION ALL\nSELECT 'olist_sellers' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_sellers\"\nUNION ALL\nSELECT 'olist_product_category_name_translation' AS table_name, COUNT(*) AS row_count FROM \"thesis_pac_dev_bronze\".\"olist_product_category_name_translation\"\nORDER BY table_name",
+      "state": "SUCCEEDED",
+      "total_execution_time_millis": 1071
+    },
+    "total_validation_bytes_scanned": 343888783,
+    "workgroup": {
+      "bytes_scanned_cutoff_per_query": 1073741824,
+      "configuration_enforced": true,
+      "effective_engine_version": "Athena engine version 3",
+      "name": "thesis-pac-dev-analytics",
+      "results_location": "s3://thesis-pac-dev-athena-results-522814714524-eu-west-1/results/",
+      "selected_engine_version": "AUTO",
+      "state": "ENABLED"
+    }
+  },
+  "aws": {
+    "account_id": "522814714524",
+    "identity_arn": "arn:aws:iam::522814714524:user/iac-experiment-user",
+    "region": "eu-west-1"
+  },
+  "evidence_type": "aws_bronze_catalog_validation",
+  "generated_at_utc": "2026-07-23T23:58:51Z",
+  "glue_catalog": {
+    "catalog_rows_represented": 1550922,
+    "database": "thesis_pac_dev_bronze",
+    "tables": [
+      {
+        "athena_row_count": 99441,
+        "column_count": 5,
+        "columns": [
+          {
+            "name": "customer_id",
+            "type": "string"
+          },
+          {
+            "name": "customer_unique_id",
+            "type": "string"
+          },
+          {
+            "name": "customer_zip_code_prefix",
+            "type": "string"
+          },
+          {
+            "name": "customer_city",
+            "type": "string"
+          },
+          {
+            "name": "customer_state",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 99441,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_customers/",
+        "managed_by": "terraform",
+        "object_sha256": "95e51974799b0a3096b895ee28b3c811cb05954575dd38a8646988dba5129a86",
+        "object_size_bytes": 19226367,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_customers",
+        "table_type": "EXTERNAL_TABLE"
+      },
+      {
+        "athena_row_count": 1000163,
+        "column_count": 5,
+        "columns": [
+          {
+            "name": "geolocation_zip_code_prefix",
+            "type": "string"
+          },
+          {
+            "name": "geolocation_lat",
+            "type": "string"
+          },
+          {
+            "name": "geolocation_lng",
+            "type": "string"
+          },
+          {
+            "name": "geolocation_city",
+            "type": "string"
+          },
+          {
+            "name": "geolocation_state",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 1000163,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_geolocation/",
+        "managed_by": "terraform",
+        "object_sha256": "1416b7b29bb534bfd505c21caa4f3a50d3a64aca12f546afaded8103adcf91ed",
+        "object_size_bytes": 176292513,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_geolocation",
+        "table_type": "EXTERNAL_TABLE"
+      },
+      {
+        "athena_row_count": 112650,
+        "column_count": 7,
+        "columns": [
+          {
+            "name": "order_id",
+            "type": "string"
+          },
+          {
+            "name": "order_item_id",
+            "type": "string"
+          },
+          {
+            "name": "product_id",
+            "type": "string"
+          },
+          {
+            "name": "seller_id",
+            "type": "string"
+          },
+          {
+            "name": "shipping_limit_date",
+            "type": "string"
+          },
+          {
+            "name": "price",
+            "type": "string"
+          },
+          {
+            "name": "freight_value",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 112650,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_items/",
+        "managed_by": "terraform",
+        "object_sha256": "801ea28926d4c6c32fabb70061d12515cb4015e71d5a4d07abcf216ce9eb01a5",
+        "object_size_bytes": 27849609,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_order_items",
+        "table_type": "EXTERNAL_TABLE"
+      },
+      {
+        "athena_row_count": 103886,
+        "column_count": 5,
+        "columns": [
+          {
+            "name": "order_id",
+            "type": "string"
+          },
+          {
+            "name": "payment_sequential",
+            "type": "string"
+          },
+          {
+            "name": "payment_type",
+            "type": "string"
+          },
+          {
+            "name": "payment_installments",
+            "type": "string"
+          },
+          {
+            "name": "payment_value",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 103886,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_payments/",
+        "managed_by": "terraform",
+        "object_sha256": "319fcbbe8aebe52fd901f4ca5c1ab56ec53f320658157353fb3264c5f0f53c5b",
+        "object_size_bytes": 15828532,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_order_payments",
+        "table_type": "EXTERNAL_TABLE"
+      },
+      {
+        "athena_row_count": 99224,
+        "column_count": 7,
+        "columns": [
+          {
+            "name": "review_id",
+            "type": "string"
+          },
+          {
+            "name": "order_id",
+            "type": "string"
+          },
+          {
+            "name": "review_score",
+            "type": "string"
+          },
+          {
+            "name": "review_comment_title",
+            "type": "string"
+          },
+          {
+            "name": "review_comment_message",
+            "type": "string"
+          },
+          {
+            "name": "review_creation_date",
+            "type": "string"
+          },
+          {
+            "name": "review_answer_timestamp",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 99224,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_order_reviews/",
+        "managed_by": "terraform",
+        "object_sha256": "1821392c3d7d1465321a74cc90a5266b9de735da4a336821430cefbb0bcca439",
+        "object_size_bytes": 28915601,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_order_reviews",
+        "table_type": "EXTERNAL_TABLE"
+      },
+      {
+        "athena_row_count": 99441,
+        "column_count": 8,
+        "columns": [
+          {
+            "name": "order_id",
+            "type": "string"
+          },
+          {
+            "name": "customer_id",
+            "type": "string"
+          },
+          {
+            "name": "order_status",
+            "type": "string"
+          },
+          {
+            "name": "order_purchase_timestamp",
+            "type": "string"
+          },
+          {
+            "name": "order_approved_at",
+            "type": "string"
+          },
+          {
+            "name": "order_delivered_carrier_date",
+            "type": "string"
+          },
+          {
+            "name": "order_delivered_customer_date",
+            "type": "string"
+          },
+          {
+            "name": "order_estimated_delivery_date",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 99441,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_orders/",
+        "managed_by": "terraform",
+        "object_sha256": "7663192efcf3c368c511f2fe4ba050deac20fe987ee874607a2a19c9349dcfeb",
+        "object_size_bytes": 37294918,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_orders",
+        "table_type": "EXTERNAL_TABLE"
+      },
+      {
+        "athena_row_count": 71,
+        "column_count": 2,
+        "columns": [
+          {
+            "name": "product_category_name",
+            "type": "string"
+          },
+          {
+            "name": "product_category_name_english",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 71,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_product_category_name_translation/",
+        "managed_by": "terraform",
+        "object_sha256": "6400e34e343472a24da0c0fac471edc0ddedd4526588a5f5fe394b181fa323da",
+        "object_size_bytes": 6890,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_product_category_name_translation",
+        "table_type": "EXTERNAL_TABLE"
+      },
+      {
+        "athena_row_count": 32951,
+        "column_count": 9,
+        "columns": [
+          {
+            "name": "product_id",
+            "type": "string"
+          },
+          {
+            "name": "product_category_name",
+            "type": "string"
+          },
+          {
+            "name": "product_name_lenght",
+            "type": "string"
+          },
+          {
+            "name": "product_description_lenght",
+            "type": "string"
+          },
+          {
+            "name": "product_photos_qty",
+            "type": "string"
+          },
+          {
+            "name": "product_weight_g",
+            "type": "string"
+          },
+          {
+            "name": "product_length_cm",
+            "type": "string"
+          },
+          {
+            "name": "product_height_cm",
+            "type": "string"
+          },
+          {
+            "name": "product_width_cm",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 32951,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_products/",
+        "managed_by": "terraform",
+        "object_sha256": "308f0e5b9934bc56642cafeda6845b5e4c66d13c8c0e87cf280eae56f494830a",
+        "object_size_bytes": 9158980,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_products",
+        "table_type": "EXTERNAL_TABLE"
+      },
+      {
+        "athena_row_count": 3095,
+        "column_count": 4,
+        "columns": [
+          {
+            "name": "seller_id",
+            "type": "string"
+          },
+          {
+            "name": "seller_zip_code_prefix",
+            "type": "string"
+          },
+          {
+            "name": "seller_city",
+            "type": "string"
+          },
+          {
+            "name": "seller_state",
+            "type": "string"
+          }
+        ],
+        "database_name": "thesis_pac_dev_bronze",
+        "expected_row_count": 3095,
+        "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+        "input_format": "org.apache.hadoop.mapred.TextInputFormat",
+        "location": "s3://thesis-pac-dev-data-lake-522814714524-eu-west-1/bronze/generated/olist/query-compatible/snapshots/921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5/tables/olist_sellers/",
+        "managed_by": "terraform",
+        "object_sha256": "6137a83cc78a851387368203b856d64698b0d4543e7e4db9e6600c1f3bc1ba71",
+        "object_size_bytes": 399776,
+        "output_format": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        "serialization_library": "org.apache.hive.hcatalog.data.JsonSerDe",
+        "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+        "table_name": "olist_sellers",
+        "table_type": "EXTERNAL_TABLE"
+      }
+    ],
+    "verified_table_count": 9
+  },
+  "input_artifacts": {
+    "manifest": {
+      "path": "manifests/bronze/olist/query-compatible-manifest.json",
+      "sha256": "ba7579a17f904fe60b7fbbb14186ff38962030af419014d7593eeabefb2d14d9",
+      "size_bytes": 16450
+    },
+    "multiline_execution": {
+      "path": "/tmp/athena-bronze-multiline-execution.json",
+      "sha256": "cfd81fff6d252b9afeef5ade3ec22276088c7a97681cd519e211c37b628f0f09",
+      "size_bytes": 2421
+    },
+    "multiline_results": {
+      "path": "/tmp/athena-bronze-multiline-results.json",
+      "sha256": "0b6a045b65ff7262eba0fb5781e755464a3a45dea58fe7a85376d0ae900173b3",
+      "size_bytes": 712
+    },
+    "multiline_sql": {
+      "path": "/tmp/athena-bronze-multiline.sql",
+      "sha256": "419a9c730c03b9870f65ea585e6fb8ebf2eecee681e4d66d5bf271f7152ea2d0",
+      "size_bytes": 932
+    },
+    "row_count_execution": {
+      "path": "/tmp/athena-bronze-row-counts-execution.json",
+      "sha256": "11fd2d4ee929d55b93c387d6747de049da9c88808e2f332260d8078a12c8a5d1",
+      "size_bytes": 2637
+    },
+    "row_count_results": {
+      "path": "/tmp/athena-bronze-row-counts-results.json",
+      "sha256": "39b85a19fb78d87c8811e48fc706f1ed6f48e323d2e10976e4acf587ad1fa86b",
+      "size_bytes": 2549
+    },
+    "row_count_sql": {
+      "path": "/tmp/athena-bronze-row-counts.sql",
+      "sha256": "ac57e41893f7e6a03b4dfd5283591122d28ba5b801d4bf24deea4bc8e8ffba99",
+      "size_bytes": 1143
+    },
+    "terraform_apply_output": {
+      "path": "/tmp/aws-bronze-catalog-apply.txt",
+      "sha256": "36300327c67fac1ccc1c66bb48108590aa4ce311ff12dd2af6e28e6842da1867",
+      "size_bytes": 5214
+    },
+    "terraform_no_drift_output": {
+      "path": "/tmp/aws-bronze-catalog-no-drift.txt",
+      "sha256": "c570af7d748a54dfcca741af5eb4225d8723a3ddd98de9d8d5d38fc8d2b44b26",
+      "size_bytes": 9568
+    },
+    "terraform_plan": {
+      "path": "/tmp/aws-bronze-catalog.tfplan",
+      "sha256": "23f14f7e4a482e9c07105a676799d5ebdd66562c0c99267a9ecb91e489ce2d16",
+      "size_bytes": 56688
+    },
+    "workgroup_response": {
+      "path": "/tmp/athena-bronze-workgroup.json",
+      "sha256": "36c07393d37b5dc42a8009e16b8aa84f834961a1b0dac83f89877cadebec6d17",
+      "size_bytes": 1033
+    }
+  },
+  "overall_status": "PASS",
+  "repository": {
+    "branch": "feature/aws-bronze-catalog",
+    "commit": "6d1ed2c27d9be5c6228ac0049fad65ee4984fa7d",
+    "short_commit": "6d1ed2c"
+  },
+  "schema_version": "1.0",
+  "source": {
+    "dataset_count": 9,
+    "generated_snapshot_id": "921334afa3174398562e25bf51a14b8b74692b64053d1f8728dec259ac93b5c5",
+    "manifest_sha256": "ba7579a17f904fe60b7fbbb14186ff38962030af419014d7593eeabefb2d14d9",
+    "preserved_multiline_records": 3852,
+    "representation": "athena-json-lines",
+    "source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+    "source_system": "olist",
+    "total_data_rows": 1550922,
+    "total_output_size_bytes": 314973186
+  },
+  "terraform": {
+    "apply_summary": {
+      "added": 9,
+      "changed": 0,
+      "destroyed": 0
+    },
+    "approved_plan_sha256": "23f14f7e4a482e9c07105a676799d5ebdd66562c0c99267a9ecb91e489ce2d16",
+    "managed_bronze_table_count": 9,
+    "managed_table_addresses": [
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_customers\"]",
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_geolocation\"]",
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_order_items\"]",
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_order_payments\"]",
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_order_reviews\"]",
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_orders\"]",
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_product_category_name_translation\"]",
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_products\"]",
+      "module.glue_catalog.aws_glue_catalog_table.bronze_query_compatible[\"olist_sellers\"]"
+    ],
+    "no_drift": true
+  }
+}
