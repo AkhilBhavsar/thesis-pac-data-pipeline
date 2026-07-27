@@ -17,6 +17,8 @@ SILVER_DIR = PROJECT_ROOT / "data" / "silver"
 RESULTS_DIR = PROJECT_ROOT / "experiments" / "results"
 LOG_DIR = PROJECT_ROOT / "logs"
 
+GEOLOCATION_COORDINATE_DECIMALS = 10
+
 SILVER_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -469,6 +471,19 @@ def build_geolocation() -> tuple[pd.DataFrame, int]:
                 "size",
             ),
         )
+    )
+
+    coordinate_columns = [
+        "geolocation_lat",
+        "geolocation_lng",
+    ]
+
+    # Remove platform-level floating-point median noise while retaining
+    # substantially more precision than the source coordinates require.
+    aggregated[coordinate_columns] = aggregated[
+        coordinate_columns
+    ].round(
+        GEOLOCATION_COORDINATE_DECIMALS
     )
 
     return aggregated, source_rows

@@ -1,8 +1,8 @@
 {
   "status": "success",
-  "build_started_at": "2026-07-27T01:53:17.848048+00:00",
-  "build_completed_at": "2026-07-27T01:53:31.920043+00:00",
-  "build_duration_seconds": 14.072,
+  "build_started_at": "2026-07-27T20:44:53.140857+00:00",
+  "build_completed_at": "2026-07-27T20:45:07.239601+00:00",
+  "build_duration_seconds": 14.0987,
   "dataset_count": 10,
   "outputs": [
     {
@@ -82,7 +82,7 @@
       "silver_rows": 19015,
       "column_count": 6,
       "full_duplicate_rows": 0,
-      "dataset_hash_sha256": "2ecdfb5c615490853995ce14a9342d075526b3b685bd6968973caec82bd94d21",
+      "dataset_hash_sha256": "ea2cb011284cd0085665abe88918938e0df189cf367bc45d3db8777e043f744a",
       "notes": "Removed exact duplicates and created one deterministic record per ZIP-code prefix."
     },
     {
