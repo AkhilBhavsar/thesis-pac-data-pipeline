@@ -21,6 +21,10 @@ module "glue_catalog" {
   bronze_query_compatible_manifest = (
     local.bronze_query_compatible_manifest
   )
+
+  bronze_supporting_manifest = (
+    local.bronze_supporting_manifest
+  )
 }
 
 module "athena" {

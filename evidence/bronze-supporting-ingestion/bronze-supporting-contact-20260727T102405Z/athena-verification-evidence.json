@@ -1,0 +1,46 @@
+{
+  "artifacts": {
+    "query_execution": "athena-query-execution.json",
+    "query_results": "athena-query-results.json",
+    "sql": "athena-verification.sql"
+  },
+  "athena": {
+    "data_scanned_bytes": 20509734,
+    "database": "thesis_pac_dev_bronze",
+    "engine_execution_time_ms": 1280,
+    "query_execution_id": "f9224486-6ca5-4b94-9fef-c07c8dc0e786",
+    "result_location": "s3://thesis-pac-dev-athena-results-522814714524-eu-west-1/results/f9224486-6ca5-4b94-9fef-c07c8dc0e786.csv",
+    "state": "SUCCEEDED",
+    "total_execution_time_ms": 1559,
+    "workgroup": "thesis-pac-dev-analytics"
+  },
+  "aws": {
+    "account_id": "522814714524",
+    "region": "eu-west-1"
+  },
+  "dataset": {
+    "contains_real_pii": false,
+    "contains_simulated_pii": true,
+    "database": "thesis_pac_dev_bronze",
+    "generated_snapshot_id": "1b7972218afd4016928dfb185f7eff30dd2a612384b357beae24bf8daac44e2c",
+    "table": "synthetic_customer_contact"
+  },
+  "evidence_type": "athena_supporting_bronze_verification",
+  "metrics": {
+    "consent_false_rows": 24888,
+    "consent_true_rows": 74553,
+    "distinct_customer_ids": 99441,
+    "distinct_synthetic_emails": 99441,
+    "distinct_synthetic_phones": 99441,
+    "non_pii_or_null_rows": 0,
+    "null_consent_rows": 0,
+    "null_customer_ids": 0,
+    "null_synthetic_emails": 0,
+    "null_synthetic_phones": 0,
+    "pii_rows": 99441,
+    "total_rows": 99441
+  },
+  "overall_status": "PASS",
+  "schema_version": "1.0",
+  "verified_at_utc": "2026-07-27T10:33:21Z"
+}
