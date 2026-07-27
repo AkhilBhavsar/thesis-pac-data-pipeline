@@ -298,23 +298,57 @@ def build_customer_contact() -> tuple[pd.DataFrame, int]:
             contact["synthetic_email"].str.lower()
         )
 
-    if "consent_flag" in contact.columns:
-        contact["consent_flag"] = (
-            contact["consent_flag"]
-            .astype("string")
-            .str.lower()
-            .map(
-                {
-                    "true": True,
-                    "false": False,
-                    "yes": True,
-                    "no": False,
-                    "1": True,
-                    "0": False,
-                }
-            )
-            .astype("boolean")
+    required_contact_columns = {
+        "customer_id",
+        "synthetic_email",
+        "synthetic_phone",
+        "marketing_consent",
+        "pii_classification",
+    }
+
+    missing_contact_columns = sorted(
+        required_contact_columns
+        - set(contact.columns)
+    )
+
+    if missing_contact_columns:
+        raise ValueError(
+            "Customer-contact source is missing "
+            "required columns: "
+            f"{missing_contact_columns}"
         )
+
+    normalised_consent = (
+        contact["marketing_consent"]
+        .astype("string")
+        .str.strip()
+        .str.lower()
+        .map(
+            {
+                "true": True,
+                "false": False,
+                "yes": True,
+                "no": False,
+                "1": True,
+                "0": False,
+            }
+        )
+    )
+
+    invalid_consent_count = int(
+        normalised_consent.isna().sum()
+    )
+
+    if invalid_consent_count:
+        raise ValueError(
+            "Customer-contact source contains "
+            f"{invalid_consent_count} invalid "
+            "marketing_consent values."
+        )
+
+    contact["marketing_consent"] = (
+        normalised_consent.astype("bool")
+    )
 
     return contact, source_rows
 

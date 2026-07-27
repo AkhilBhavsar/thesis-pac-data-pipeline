@@ -63,7 +63,7 @@ forbidden_fields:
   - review_id
   - synthetic_email
   - synthetic_phone
-  - consent_flag
+  - marketing_consent
   - customer_zip_code_prefix
   - seller_zip_code_prefix
   - address
