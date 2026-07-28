@@ -1,0 +1,135 @@
+{
+  "datasets": [
+    {
+      "column_count": 5,
+      "dataset": "silver_customer_contact",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "f33be50a37f12ffd965a3cf8fafe79ed4e23d04b773e3b7d98586cab9fad6f90",
+      "physical_sha256": "75bd18fc09997d2c42d0a5f9449de4d3e6fddf715ea2f3a875313d4ff27e1a5f",
+      "silver_rows": 99441,
+      "size_bytes": 10366833,
+      "source_rows": 99441
+    },
+    {
+      "column_count": 5,
+      "dataset": "silver_customers",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "2f8671c604c03daaf2fa37ad5cd1a7c48dbea6752afbcaaaec453581b7063289",
+      "physical_sha256": "475b42289a55dcb78d3ee7208511e03c4baa39b72d9402838273e318edaee43c",
+      "silver_rows": 99441,
+      "size_bytes": 8562270,
+      "source_rows": 99441
+    },
+    {
+      "column_count": 6,
+      "dataset": "silver_geolocation",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "ea2cb011284cd0085665abe88918938e0df189cf367bc45d3db8777e043f744a",
+      "physical_sha256": "7d5040ef2516476775d481e326153410dd80c7ee515bbcaff0cd72aad8b2073c",
+      "silver_rows": 19015,
+      "size_bytes": 998341,
+      "source_rows": 1000163
+    },
+    {
+      "column_count": 8,
+      "dataset": "silver_order_items",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "466dc51444a32c067cedf06b4487e80806833f4cfae518c26ff5a01e975452f7",
+      "physical_sha256": "a6ffcbd75ce21b6908f7f73425d13f805e31cf3d1dcead71e50e30cce25088b6",
+      "silver_rows": 112650,
+      "size_bytes": 16457088,
+      "source_rows": 112650
+    },
+    {
+      "column_count": 11,
+      "dataset": "silver_orders",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "0bdcff6352d2867e1d9e05b64fb23fe6f7a5db1b914eef55a20ef49381bbd727",
+      "physical_sha256": "a86655d6773fb4d7d6c8137ee1523721b4510988befbe9b717c2f835a1edc3b1",
+      "silver_rows": 99441,
+      "size_bytes": 24560163,
+      "source_rows": 99441
+    },
+    {
+      "column_count": 5,
+      "dataset": "silver_payments",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "2a4d5207cbd39e84f37acc0eb7692904594cf86ee7afd61cfac898bb26be8852",
+      "physical_sha256": "b9f890e8f219d9691909c6d19574d0dab920afb95e9bc213dcc43082416187ac",
+      "silver_rows": 103886,
+      "size_bytes": 5633362,
+      "source_rows": 103886
+    },
+    {
+      "column_count": 2,
+      "dataset": "silver_product_categories",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "3efae30a48a918ded5201784b622a10760e441004e7cab24c688405b7dd3d136",
+      "physical_sha256": "5233473346639d5ff3da9b784385ba284778abfaac1062572abe99e8aba8b7e3",
+      "silver_rows": 71,
+      "size_bytes": 2540,
+      "source_rows": 71
+    },
+    {
+      "column_count": 9,
+      "dataset": "silver_products",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "4f4539bfb481d9b5d3e789e53fb679f88141d7e99b47e4b0d0094598f95b4ef9",
+      "physical_sha256": "ba6f8303993603b4387a593ea6684973f0535d366127548813ec734f30f9fd57",
+      "silver_rows": 32951,
+      "size_bytes": 2795930,
+      "source_rows": 32951
+    },
+    {
+      "column_count": 9,
+      "dataset": "silver_reviews",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "cea99367b61d8e33ea4d26f360ee53e81ec054f06612d1aae6a9ef890db45530",
+      "physical_sha256": "130f793628239a7b6cbee9d9397561a2fea9794e9d5c0f3429425429b772d08b",
+      "silver_rows": 99224,
+      "size_bytes": 21580564,
+      "source_rows": 99224
+    },
+    {
+      "column_count": 4,
+      "dataset": "silver_sellers",
+      "full_duplicate_rows": 0,
+      "logical_sha256": "4ea9dcc6cdab8bc0d234f49cd42a5d74d52e17a1a5f36991a06d90b5af4a375b",
+      "physical_sha256": "0821e5d29f888035b20df55afb4d59f6fcc84c39f44ac6feef2cb74f08336281",
+      "silver_rows": 3095,
+      "size_bytes": 163590,
+      "source_rows": 3095
+    }
+  ],
+  "identity_version": 1,
+  "input_contract": {
+    "input_count": 10,
+    "sha256": "77712baeb73824e5690c3594cb4694b8449a7856b62045b1e1f11f52f3a01124",
+    "snapshots": {
+      "olist_source_snapshot_id": "43cc5e9c8436f7919491dd90872d6f4d94d61d4694c1d4307e41456e405052d2",
+      "supporting_generated_snapshot_id": "1b7972218afd4016928dfb185f7eff30dd2a612384b357beae24bf8daac44e2c"
+    },
+    "total_input_bytes": 136653269
+  },
+  "runtime": {
+    "architecture": "arm64",
+    "base_image": "public.ecr.aws/lambda/python@sha256:24c43a94adf69e1cbf1caeaf5ab148e64f24a0f045ecfde3d8a1db96687dd64d",
+    "numpy_version": "2.4.6",
+    "pandas_version": "3.0.3",
+    "python_version_observed": "3.12.13"
+  },
+  "transformation": {
+    "builder_sha256": "07c0251d94fcba60c2474ee2c6efdf2a8a419445a227b3d8289ac463facea63a",
+    "geolocation_coordinate_decimals": 10,
+    "requirements_sha256": "01c95f97babd1b332ebad4ef8280ce8b79f44fe279d3476e944ec6551227fa1e",
+    "validator_sha256": "38a6377b3d5dc1fb67cd063049ec4ea118275226f1f9e1cb87405b4671edf4cb"
+  },
+  "validation_contract": {
+    "critical_failures": 0,
+    "failed_checks": 0,
+    "overall_status": "PASS",
+    "passed_checks": 53,
+    "total_checks": 53,
+    "validation_results_sha256": "d9a372c22953e83ac36a4b76bb78ffcf2f04a72746953e35d00053df08e5cd41"
+  }
+}
