@@ -20,25 +20,25 @@ resource "aws_glue_catalog_table" "bronze_supporting" {
   )
 
   parameters = {
-    EXTERNAL               = "TRUE"
-    classification         = "json"
-    compressionType        = "none"
-    typeOfData             = "file"
-    managed_by             = "terraform"
-    project                = var.project_name
-    environment            = var.environment
-    data_zone              = "bronze"
-    source_system          = var.bronze_supporting_manifest.source_system
-    dataset_class          = var.bronze_supporting_manifest.dataset_class
-    source_snapshot_id     = var.bronze_supporting_manifest.source_snapshot_id
-    generated_snapshot_id  = var.bronze_supporting_manifest.generated_snapshot_id
-    representation         = var.bronze_supporting_manifest.representation
-    row_count              = tostring(each.value.row_count)
-    object_size_bytes      = tostring(each.value.output_size_bytes)
-    object_sha256          = each.value.output_sha256
-    primary_key            = join(",", each.value.primary_key)
-    synthetic              = tostring(var.bronze_supporting_manifest.governance.synthetic)
-    contains_real_pii      = tostring(var.bronze_supporting_manifest.governance.contains_real_pii)
+    EXTERNAL              = "TRUE"
+    classification        = "json"
+    compressionType       = "none"
+    typeOfData            = "file"
+    managed_by            = "terraform"
+    project               = var.project_name
+    environment           = var.environment
+    data_zone             = "bronze"
+    source_system         = var.bronze_supporting_manifest.source_system
+    dataset_class         = var.bronze_supporting_manifest.dataset_class
+    source_snapshot_id    = var.bronze_supporting_manifest.source_snapshot_id
+    generated_snapshot_id = var.bronze_supporting_manifest.generated_snapshot_id
+    representation        = var.bronze_supporting_manifest.representation
+    row_count             = tostring(each.value.row_count)
+    object_size_bytes     = tostring(each.value.output_size_bytes)
+    object_sha256         = each.value.output_sha256
+    primary_key           = join(",", each.value.primary_key)
+    synthetic             = tostring(var.bronze_supporting_manifest.governance.synthetic)
+    contains_real_pii     = tostring(var.bronze_supporting_manifest.governance.contains_real_pii)
     contains_simulated_pii = tostring(
       var.bronze_supporting_manifest.governance.contains_simulated_pii
     )

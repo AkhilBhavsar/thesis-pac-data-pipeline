@@ -2,17 +2,17 @@ variable "bronze_supporting_manifest" {
   description = "Deterministic manifest defining the generated supporting Bronze dataset."
 
   type = object({
-    schema_version            = string
-    source_system             = string
-    dataset_class             = string
-    source_snapshot_id        = string
-    generated_snapshot_id     = string
-    representation            = string
-    destination_prefix        = string
-    manifest_destination_key  = string
-    dataset_count             = number
-    total_data_rows           = number
-    total_output_size_bytes   = number
+    schema_version           = string
+    source_system            = string
+    dataset_class            = string
+    source_snapshot_id       = string
+    generated_snapshot_id    = string
+    representation           = string
+    destination_prefix       = string
+    manifest_destination_key = string
+    dataset_count            = number
+    total_data_rows          = number
+    total_output_size_bytes  = number
 
     governance = object({
       synthetic              = bool
@@ -130,7 +130,7 @@ variable "bronze_supporting_manifest" {
       [
         for column in var.bronze_supporting_manifest.datasets[0].columns :
         "${column.name}:${column.type}"
-      ] == [
+        ] == [
         "customer_id:string",
         "synthetic_email:string",
         "synthetic_phone:string",

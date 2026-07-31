@@ -38,6 +38,15 @@ module "athena" {
   bytes_scanned_cutoff_per_query = 1073741824
 }
 
+module "athena_dbt" {
+  source = "../../modules/athena_dbt"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  bytes_scanned_cutoff_per_query = 1073741824
+}
+
 module "cost_controls" {
   source = "../../modules/cost_controls"
 
