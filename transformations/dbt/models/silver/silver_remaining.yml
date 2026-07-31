@@ -1,0 +1,93 @@
+version: 2
+
+models:
+  - name: silver_customer_contact
+    description: >
+      Cleaned deterministic synthetic customer-contact data. This model
+      contains simulated PII only and must remain outside public outputs.
+    columns:
+      - name: customer_id
+        data_tests:
+          - not_null
+          - unique
+
+  - name: silver_customers
+    description: >
+      Cleaned Olist customer records with normalised city, state and postal
+      prefix fields.
+    columns:
+      - name: customer_id
+        data_tests:
+          - not_null
+          - unique
+
+  - name: silver_geolocation
+    description: >
+      One deterministic representative geolocation record per postal prefix,
+      using exact medians and deterministic modal city and state values.
+    columns:
+      - name: geolocation_zip_code_prefix
+        data_tests:
+          - not_null
+          - unique
+
+  - name: silver_order_items
+    description: >
+      Cleaned order-item records with typed financial values and derived
+      item_total_value.
+    columns:
+      - name: order_id
+        data_tests:
+          - not_null
+      - name: order_item_id
+        data_tests:
+          - not_null
+
+  - name: silver_payments
+    description: >
+      Cleaned and typed payment records at order and payment-sequence grain.
+    columns:
+      - name: order_id
+        data_tests:
+          - not_null
+      - name: payment_sequential
+        data_tests:
+          - not_null
+
+  - name: silver_product_categories
+    description: >
+      Normalised Portuguese-to-English product-category translation data.
+    columns:
+      - name: product_category_name
+        data_tests:
+          - not_null
+          - unique
+
+  - name: silver_products
+    description: >
+      Cleaned product records with corrected source column names and typed
+      product dimensions.
+    columns:
+      - name: product_id
+        data_tests:
+          - not_null
+          - unique
+
+  - name: silver_reviews
+    description: >
+      Cleaned review records with deterministic review occurrence numbers and
+      unique SHA-256 review_record_id values.
+    columns:
+      - name: review_record_id
+        data_tests:
+          - not_null
+          - unique
+
+  - name: silver_sellers
+    description: >
+      Cleaned seller records with normalised city and state values.
+    columns:
+      - name: seller_id
+        data_tests:
+          - not_null
+          - unique
