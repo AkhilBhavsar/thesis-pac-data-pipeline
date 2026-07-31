@@ -1,0 +1,27 @@
+name: thesis_pac_pipeline
+version: "1.0.0"
+config-version: 2
+
+profile: thesis_pac_athena
+
+model-paths:
+  - models
+
+macro-paths:
+  - macros
+
+target-path: target
+
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  thesis_pac_pipeline:
+    silver:
+      +materialized: table
+      +table_type: hive
+      +format: parquet
+      +tags:
+        - silver
+        - reference_parity

@@ -1,0 +1,151 @@
+version: 2
+sources:
+- name: bronze
+  description: Versioned Bronze datasets catalogued in AWS Glue.
+  database: awsdatacatalog
+  schema: thesis_pac_dev_bronze
+  tables:
+  - name: olist_customers
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: customer_id
+      data_type: string
+    - name: customer_unique_id
+      data_type: string
+    - name: customer_zip_code_prefix
+      data_type: string
+    - name: customer_city
+      data_type: string
+    - name: customer_state
+      data_type: string
+  - name: olist_geolocation
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: geolocation_zip_code_prefix
+      data_type: string
+    - name: geolocation_lat
+      data_type: string
+    - name: geolocation_lng
+      data_type: string
+    - name: geolocation_city
+      data_type: string
+    - name: geolocation_state
+      data_type: string
+  - name: olist_order_items
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: order_id
+      data_type: string
+    - name: order_item_id
+      data_type: string
+    - name: product_id
+      data_type: string
+    - name: seller_id
+      data_type: string
+    - name: shipping_limit_date
+      data_type: string
+    - name: price
+      data_type: string
+    - name: freight_value
+      data_type: string
+  - name: olist_order_payments
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: order_id
+      data_type: string
+    - name: payment_sequential
+      data_type: string
+    - name: payment_type
+      data_type: string
+    - name: payment_installments
+      data_type: string
+    - name: payment_value
+      data_type: string
+  - name: olist_order_reviews
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: review_id
+      data_type: string
+    - name: order_id
+      data_type: string
+    - name: review_score
+      data_type: string
+    - name: review_comment_title
+      data_type: string
+    - name: review_comment_message
+      data_type: string
+    - name: review_creation_date
+      data_type: string
+    - name: review_answer_timestamp
+      data_type: string
+  - name: olist_orders
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: order_id
+      data_type: string
+    - name: customer_id
+      data_type: string
+    - name: order_status
+      data_type: string
+    - name: order_purchase_timestamp
+      data_type: string
+    - name: order_approved_at
+      data_type: string
+    - name: order_delivered_carrier_date
+      data_type: string
+    - name: order_delivered_customer_date
+      data_type: string
+    - name: order_estimated_delivery_date
+      data_type: string
+  - name: olist_product_category_name_translation
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: product_category_name
+      data_type: string
+    - name: product_category_name_english
+      data_type: string
+  - name: olist_products
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: product_id
+      data_type: string
+    - name: product_category_name
+      data_type: string
+    - name: product_name_lenght
+      data_type: string
+    - name: product_description_lenght
+      data_type: string
+    - name: product_photos_qty
+      data_type: string
+    - name: product_weight_g
+      data_type: string
+    - name: product_length_cm
+      data_type: string
+    - name: product_height_cm
+      data_type: string
+    - name: product_width_cm
+      data_type: string
+  - name: olist_sellers
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: seller_id
+      data_type: string
+    - name: seller_zip_code_prefix
+      data_type: string
+    - name: seller_city
+      data_type: string
+    - name: seller_state
+      data_type: string
+  - name: synthetic_customer_contact
+    description: Existing governed Bronze Glue table used as a dbt source.
+    columns:
+    - name: customer_id
+      data_type: string
+    - name: synthetic_email
+      data_type: string
+    - name: synthetic_phone
+      data_type: string
+    - name: marketing_consent
+      data_type: boolean
+    - name: pii_classification
+      data_type: string

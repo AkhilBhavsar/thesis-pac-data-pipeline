@@ -120,3 +120,13 @@ override.tf.json
 
 # Local partial Terraform backend configuration
 **/backend.hcl
+
+# ==================================================
+# dbt generated files and local profiles
+# ==================================================
+transformations/dbt/target/
+transformations/dbt/logs/
+transformations/dbt/dbt_packages/
+transformations/dbt/profiles.yml
+transformations/dbt/.user.yml
+transformations/dbt/.dbt/
