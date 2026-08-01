@@ -1,3 +1,5 @@
+{{ config(tags=['gold']) }}
+
 select
     column_name
 

@@ -1,3 +1,5 @@
+{{ config(tags=['gold']) }}
+
 with expected (
     table_schema,
     table_name,
