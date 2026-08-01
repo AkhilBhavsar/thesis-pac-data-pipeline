@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: silver_orders
+    description: >
+      Cleaned order records with parsed timestamps and derived delivery
+      measures. This temporary model is designed for parity with the
+      accepted Python Silver Orders reference oracle.
+
+    config:
+      meta:
+        layer: silver
+        semantic_primary_key: order_id
+        reference_oracle: python
+        authoritative_publication: false
+
+    columns:
+      - name: order_id
+        description: Semantic primary key for an order.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: Customer identifier associated with the order.
+
+      - name: order_status
+        description: Cleaned order status.
+
+      - name: order_purchase_timestamp
+        description: Parsed purchase timestamp, interpreted with UTC semantics.
+
+      - name: order_approved_at
+        description: Parsed approval timestamp.
+
+      - name: order_delivered_carrier_date
+        description: Parsed carrier hand-off timestamp.
+
+      - name: order_delivered_customer_date
+        description: Parsed customer delivery timestamp.
+
+      - name: order_estimated_delivery_date
+        description: Parsed estimated delivery timestamp.
+
+      - name: order_purchase_date
+        description: Calendar date derived from order_purchase_timestamp.
+
+      - name: delivery_delay_days
+        description: >
+          Fractional days between estimated delivery and actual customer
+          delivery. Negative values represent delivery before the estimate.
+
+      - name: actual_delivery_days
+        description: >
+          Fractional days between purchase and customer delivery.

@@ -1,8 +1,8 @@
 {
   "status": "success",
-  "build_started_at": "2026-07-16T02:18:22.894893+00:00",
-  "build_completed_at": "2026-07-16T02:18:36.689289+00:00",
-  "build_duration_seconds": 13.7944,
+  "build_started_at": "2026-07-27T20:44:53.140857+00:00",
+  "build_completed_at": "2026-07-27T20:45:07.239601+00:00",
+  "build_duration_seconds": 14.0987,
   "dataset_count": 10,
   "outputs": [
     {
@@ -52,7 +52,7 @@
       "silver_rows": 99441,
       "column_count": 5,
       "full_duplicate_rows": 0,
-      "dataset_hash_sha256": "3c12c57a490a4c223c8499cde87ca3fe49ef3f3d9d9f4712073bdfb408d28f42",
+      "dataset_hash_sha256": "f33be50a37f12ffd965a3cf8fafe79ed4e23d04b773e3b7d98586cab9fad6f90",
       "notes": "Standardised synthetic contact and consent fields."
     },
     {
@@ -82,7 +82,7 @@
       "silver_rows": 19015,
       "column_count": 6,
       "full_duplicate_rows": 0,
-      "dataset_hash_sha256": "2ecdfb5c615490853995ce14a9342d075526b3b685bd6968973caec82bd94d21",
+      "dataset_hash_sha256": "ea2cb011284cd0085665abe88918938e0df189cf367bc45d3db8777e043f744a",
       "notes": "Removed exact duplicates and created one deterministic record per ZIP-code prefix."
     },
     {

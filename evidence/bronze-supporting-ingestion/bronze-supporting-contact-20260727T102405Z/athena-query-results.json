@@ -1,0 +1,235 @@
+{
+    "ResultSet": {
+        "Rows": [
+            {
+                "Data": [
+                    {
+                        "VarCharValue": "total_rows"
+                    },
+                    {
+                        "VarCharValue": "distinct_customer_ids"
+                    },
+                    {
+                        "VarCharValue": "distinct_synthetic_emails"
+                    },
+                    {
+                        "VarCharValue": "distinct_synthetic_phones"
+                    },
+                    {
+                        "VarCharValue": "consent_true_rows"
+                    },
+                    {
+                        "VarCharValue": "consent_false_rows"
+                    },
+                    {
+                        "VarCharValue": "null_consent_rows"
+                    },
+                    {
+                        "VarCharValue": "pii_rows"
+                    },
+                    {
+                        "VarCharValue": "non_pii_or_null_rows"
+                    },
+                    {
+                        "VarCharValue": "null_customer_ids"
+                    },
+                    {
+                        "VarCharValue": "null_synthetic_emails"
+                    },
+                    {
+                        "VarCharValue": "null_synthetic_phones"
+                    }
+                ]
+            },
+            {
+                "Data": [
+                    {
+                        "VarCharValue": "99441"
+                    },
+                    {
+                        "VarCharValue": "99441"
+                    },
+                    {
+                        "VarCharValue": "99441"
+                    },
+                    {
+                        "VarCharValue": "99441"
+                    },
+                    {
+                        "VarCharValue": "74553"
+                    },
+                    {
+                        "VarCharValue": "24888"
+                    },
+                    {
+                        "VarCharValue": "0"
+                    },
+                    {
+                        "VarCharValue": "99441"
+                    },
+                    {
+                        "VarCharValue": "0"
+                    },
+                    {
+                        "VarCharValue": "0"
+                    },
+                    {
+                        "VarCharValue": "0"
+                    },
+                    {
+                        "VarCharValue": "0"
+                    }
+                ]
+            }
+        ],
+        "ResultSetMetadata": {
+            "ColumnInfo": [
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "total_rows",
+                    "Label": "total_rows",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "distinct_customer_ids",
+                    "Label": "distinct_customer_ids",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "distinct_synthetic_emails",
+                    "Label": "distinct_synthetic_emails",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "distinct_synthetic_phones",
+                    "Label": "distinct_synthetic_phones",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "consent_true_rows",
+                    "Label": "consent_true_rows",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "consent_false_rows",
+                    "Label": "consent_false_rows",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "null_consent_rows",
+                    "Label": "null_consent_rows",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "pii_rows",
+                    "Label": "pii_rows",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "non_pii_or_null_rows",
+                    "Label": "non_pii_or_null_rows",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "null_customer_ids",
+                    "Label": "null_customer_ids",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "null_synthetic_emails",
+                    "Label": "null_synthetic_emails",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                },
+                {
+                    "CatalogName": "hive",
+                    "SchemaName": "",
+                    "TableName": "",
+                    "Name": "null_synthetic_phones",
+                    "Label": "null_synthetic_phones",
+                    "Type": "bigint",
+                    "Precision": 19,
+                    "Scale": 0,
+                    "Nullable": "UNKNOWN",
+                    "CaseSensitive": false
+                }
+            ]
+        }
+    },
+    "UpdateCount": 0
+}

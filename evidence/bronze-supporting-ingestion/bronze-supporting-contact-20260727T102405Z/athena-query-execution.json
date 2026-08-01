@@ -1,0 +1,45 @@
+{
+    "QueryExecution": {
+        "QueryExecutionId": "f9224486-6ca5-4b94-9fef-c07c8dc0e786",
+        "Query": "SELECT\n    COUNT(*) AS total_rows,\n    COUNT(DISTINCT customer_id) AS distinct_customer_ids,\n    COUNT(DISTINCT synthetic_email) AS distinct_synthetic_emails,\n    COUNT(DISTINCT synthetic_phone) AS distinct_synthetic_phones,\n\n    SUM(\n        CASE\n            WHEN marketing_consent THEN 1\n            ELSE 0\n        END\n    ) AS consent_true_rows,\n\n    SUM(\n        CASE\n            WHEN NOT marketing_consent THEN 1\n            ELSE 0\n        END\n    ) AS consent_false_rows,\n\n    SUM(\n        CASE\n            WHEN marketing_consent IS NULL THEN 1\n            ELSE 0\n        END\n    ) AS null_consent_rows,\n\n    SUM(\n        CASE\n            WHEN pii_classification = 'PII' THEN 1\n            ELSE 0\n        END\n    ) AS pii_rows,\n\n    SUM(\n        CASE\n            WHEN pii_classification <> 'PII'\n                 OR pii_classification IS NULL\n            THEN 1\n            ELSE 0\n        END\n    ) AS non_pii_or_null_rows,\n\n    SUM(\n        CASE\n            WHEN customer_id IS NULL THEN 1\n            ELSE 0\n        END\n    ) AS null_customer_ids,\n\n    SUM(\n        CASE\n            WHEN synthetic_email IS NULL THEN 1\n            ELSE 0\n        END\n    ) AS null_synthetic_emails,\n\n    SUM(\n        CASE\n            WHEN synthetic_phone IS NULL THEN 1\n            ELSE 0\n        END\n    ) AS null_synthetic_phones\n\nFROM synthetic_customer_contact",
+        "StatementType": "DML",
+        "ResultConfiguration": {
+            "OutputLocation": "s3://thesis-pac-dev-athena-results-522814714524-eu-west-1/results/f9224486-6ca5-4b94-9fef-c07c8dc0e786.csv",
+            "EncryptionConfiguration": {
+                "EncryptionOption": "SSE_S3"
+            },
+            "ExpectedBucketOwner": "522814714524"
+        },
+        "ResultReuseConfiguration": {
+            "ResultReuseByAgeConfiguration": {
+                "Enabled": false
+            }
+        },
+        "QueryExecutionContext": {
+            "Database": "thesis_pac_dev_bronze"
+        },
+        "Status": {
+            "State": "SUCCEEDED",
+            "SubmissionDateTime": "2026-07-27T11:32:59.900000+01:00",
+            "CompletionDateTime": "2026-07-27T11:33:01.459000+01:00"
+        },
+        "Statistics": {
+            "EngineExecutionTimeInMillis": 1280,
+            "DataScannedInBytes": 20509734,
+            "TotalExecutionTimeInMillis": 1559,
+            "QueryQueueTimeInMillis": 92,
+            "ServicePreProcessingTimeInMillis": 137,
+            "QueryPlanningTimeInMillis": 172,
+            "ServiceProcessingTimeInMillis": 50,
+            "ResultReuseInformation": {
+                "ReusedPreviousResult": false
+            }
+        },
+        "WorkGroup": "thesis-pac-dev-analytics",
+        "EngineVersion": {
+            "SelectedEngineVersion": "AUTO",
+            "EffectiveEngineVersion": "Athena engine version 3"
+        },
+        "SubstatementType": "SELECT"
+    }
+}

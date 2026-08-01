@@ -1,0 +1,20 @@
+thesis_pac_athena:
+  target: dev
+
+  outputs:
+    dev:
+      type: athena
+
+      database: awsdatacatalog
+      schema: "{{ env_var('DBT_ATHENA_SCHEMA', 'thesis_pac_dev_dbt') }}"
+
+      region_name: "{{ env_var('AWS_REGION', 'eu-west-1') }}"
+      work_group: "{{ env_var('DBT_ATHENA_WORKGROUP', 'thesis-pac-dev-dbt-transform') }}"
+
+      s3_staging_dir: "{{ env_var('DBT_ATHENA_STAGING_DIR') }}"
+      s3_data_dir: "{{ env_var('DBT_ATHENA_DATA_DIR') }}"
+      s3_data_naming: schema_table_unique
+
+      threads: 1
+      num_retries: 0
+      poll_interval: 1

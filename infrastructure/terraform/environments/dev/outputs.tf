@@ -77,3 +77,23 @@ output "runtime_iam_policy_arns" {
   description = "Runtime IAM policy ARNs by AWS service."
   value       = module.runtime_iam.policy_arns
 }
+
+output "dbt_athena_workgroup_name" {
+  description = "Dedicated Athena workgroup for dbt transformations."
+  value       = module.athena_dbt.workgroup_name
+}
+
+output "dbt_athena_workgroup_arn" {
+  description = "ARN of the dedicated dbt Athena workgroup."
+  value       = module.athena_dbt.workgroup_arn
+}
+
+output "dbt_athena_bytes_scanned_cutoff_per_query" {
+  description = "Maximum bytes allowed per dbt Athena query."
+  value       = module.athena_dbt.bytes_scanned_cutoff_per_query
+}
+
+output "dbt_glue_database_name" {
+  description = "Glue database used for controlled dbt transformations."
+  value       = module.glue_catalog.dbt_database_name
+}
