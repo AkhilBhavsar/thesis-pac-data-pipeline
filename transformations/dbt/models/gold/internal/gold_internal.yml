@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: gold_daily_sales
+    description: >
+      Daily delivered-order metrics at one row per order date.
+    columns:
+      - name: order_date
+        data_tests:
+          - not_null
+          - unique
+
+  - name: gold_sales_by_state
+    description: >
+      Delivered-order sales metrics at one row per customer state.
+    columns:
+      - name: customer_state
+        data_tests:
+          - not_null
+          - unique
+
+  - name: gold_product_category_revenue
+    description: >
+      Delivered-item revenue and contribution metrics at one row per
+      translated product category.
+    columns:
+      - name: product_category_name_english
+        data_tests:
+          - not_null
+          - unique
+
+  - name: gold_customer_order_summary
+    description: >
+      Confidential customer-level delivered-order and lifetime-spend
+      summary. This relation is restricted to Gold Internal.
+    columns:
+      - name: customer_unique_id
+        data_tests:
+          - not_null
+          - unique

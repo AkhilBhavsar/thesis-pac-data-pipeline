@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: gold_public_sales_dashboard
+    description: >
+      Public-safe aggregate sales data containing no customer, order,
+      product, seller or synthetic-contact identifiers.
+    columns:
+      - name: order_date
+        data_tests:
+          - not_null
+
+      - name: customer_state
+        data_tests:
+          - not_null
+
+      - name: product_category_name_english
+        data_tests:
+          - not_null

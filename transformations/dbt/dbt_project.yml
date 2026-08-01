@@ -10,6 +10,9 @@ model-paths:
 macro-paths:
   - macros
 
+test-paths:
+  - tests
+
 target-path: target
 
 clean-targets:
@@ -25,3 +28,30 @@ models:
       +tags:
         - silver
         - reference_parity
+
+    intermediate:
+      +materialized: ephemeral
+      +tags:
+        - intermediate
+
+    gold:
+      internal:
+        +materialized: table
+        +table_type: hive
+        +format: parquet
+        +schema: thesis_pac_dev_gold_internal
+        +tags:
+          - gold
+          - internal
+          - reference_parity
+
+      public:
+        +materialized: table
+        +table_type: hive
+        +format: parquet
+        +schema: thesis_pac_dev_gold_public
+        +tags:
+          - gold
+          - public
+          - public_safe
+          - reference_parity
