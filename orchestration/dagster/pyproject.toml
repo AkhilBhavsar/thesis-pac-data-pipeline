@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "thesis-pac-orchestration"
+version = "0.1.0"
+description = "Dagster orchestration for the thesis Policy-as-Code data pipeline."
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "dagster==1.13.16",
+    "dagster-dbt==0.29.16",
+    "dagster-webserver==1.13.16",
+    "dbt-core==1.11.11",
+    "dbt-athena-community==1.11.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["thesis_orchestration*"]
