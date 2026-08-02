@@ -98,7 +98,7 @@ class DagsterDefinitionsTest(unittest.TestCase):
         }
 
         for job_name in expected_jobs:
-            job = defs.get_job_def(job_name)
+            job = defs.resolve_job_def(job_name)
 
             self.assertEqual(
                 job.name,
