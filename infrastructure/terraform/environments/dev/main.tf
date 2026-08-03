@@ -92,6 +92,12 @@ module "github_actions_c0" {
     module.athena_dbt.workgroup_arn
   )
 
+  canonical_read_database_names = [
+    module.glue_catalog.database_names["silver"],
+    module.glue_catalog.database_names["gold_internal"],
+    module.glue_catalog.database_names["gold_public"]
+  ]
+
   bronze_database_name = (
     module.glue_catalog.database_names["bronze"]
   )

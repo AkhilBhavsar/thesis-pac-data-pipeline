@@ -39,6 +39,16 @@ locals {
     "arn:${local.partition}:glue:${var.aws_region}:${var.aws_account_id}:table/${var.shadow_database_prefix}*/*"
   )
 
+  canonical_read_database_arns = [
+    for database_name in var.canonical_read_database_names :
+    "arn:${local.partition}:glue:${var.aws_region}:${var.aws_account_id}:database/${database_name}"
+  ]
+
+  canonical_read_table_arns = [
+    for database_name in var.canonical_read_database_names :
+    "arn:${local.partition}:glue:${var.aws_region}:${var.aws_account_id}:table/${database_name}/*"
+  ]
+
   athena_data_catalog_arn = (
     "arn:${local.partition}:athena:${var.aws_region}:${var.aws_account_id}:datacatalog/AwsDataCatalog"
   )
@@ -46,6 +56,10 @@ locals {
   data_lake_list_prefixes = [
     "bronze",
     "bronze/*",
+    "silver",
+    "silver/*",
+    "gold",
+    "gold/*",
     "experiments/c0",
     "experiments/c0/*"
   ]
@@ -248,13 +262,17 @@ data "aws_iam_policy_document" "c0" {
       "glue:BatchGetPartition"
     ]
 
-    resources = [
-      local.glue_catalog_arn,
-      local.bronze_database_arn,
-      local.bronze_table_arn,
-      local.shadow_database_arn,
-      local.shadow_table_arn
-    ]
+    resources = concat(
+      [
+        local.glue_catalog_arn,
+        local.bronze_database_arn,
+        local.bronze_table_arn,
+        local.shadow_database_arn,
+        local.shadow_table_arn
+      ],
+      local.canonical_read_database_arns,
+      local.canonical_read_table_arns
+    )
   }
 
   statement {

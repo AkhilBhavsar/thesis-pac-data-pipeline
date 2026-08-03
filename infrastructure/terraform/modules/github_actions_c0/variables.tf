@@ -89,6 +89,23 @@ variable "bronze_database_name" {
   type        = string
 }
 
+variable "canonical_read_database_names" {
+  description = "Canonical Glue databases readable for before-and-after fingerprints."
+  type        = set(string)
+
+  validation {
+    condition = (
+      length(var.canonical_read_database_names) == 3 &&
+      alltrue([
+        for database_name in var.canonical_read_database_names :
+        can(regex("^[a-z0-9_]+$", database_name))
+      ])
+    )
+
+    error_message = "canonical_read_database_names must contain exactly three lowercase Glue database names."
+  }
+}
+
 variable "shadow_database_prefix" {
   description = "Required prefix for isolated C0 Glue databases."
   type        = string
