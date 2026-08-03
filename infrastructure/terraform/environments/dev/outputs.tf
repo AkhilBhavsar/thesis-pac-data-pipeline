@@ -97,3 +97,28 @@ output "dbt_glue_database_name" {
   description = "Glue database used for controlled dbt transformations."
   value       = module.glue_catalog.dbt_database_name
 }
+
+output "github_actions_c0_oidc_provider_arn" {
+  description = "ARN of the GitHub Actions OIDC provider."
+  value       = module.github_actions_c0.oidc_provider_arn
+}
+
+output "github_actions_c0_role_name" {
+  description = "Name of the isolated C0 GitHub Actions role."
+  value       = module.github_actions_c0.role_name
+}
+
+output "github_actions_c0_role_arn" {
+  description = "ARN of the isolated C0 GitHub Actions role."
+  value       = module.github_actions_c0.role_arn
+}
+
+output "github_actions_c0_policy_arn" {
+  description = "ARN of the isolated C0 GitHub Actions policy."
+  value       = module.github_actions_c0.policy_arn
+}
+
+output "github_actions_c0_subject" {
+  description = "Exact immutable GitHub OIDC subject trusted by the C0 role."
+  value       = module.github_actions_c0.github_subject
+}

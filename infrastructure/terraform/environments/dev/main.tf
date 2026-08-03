@@ -66,3 +66,33 @@ module "runtime_iam" {
   athena_workgroup_arn      = module.athena.workgroup_arn
   glue_database_names       = module.glue_catalog.database_names
 }
+
+module "github_actions_c0" {
+  source = "../../modules/github_actions_c0"
+
+  project_name   = var.project_name
+  environment    = var.environment
+  aws_region     = var.aws_region
+  aws_account_id = data.aws_caller_identity.current.account_id
+
+  github_repository    = "AkhilBhavsar/thesis-pac-data-pipeline"
+  github_branch        = "feature/dagster-orchestration"
+  github_owner_id      = "68535071"
+  github_repository_id = "1302169914"
+
+  data_lake_bucket_arn = (
+    module.data_lake.data_lake_bucket_arn
+  )
+
+  athena_results_bucket_arn = (
+    module.data_lake.athena_results_bucket_arn
+  )
+
+  dbt_athena_workgroup_arn = (
+    module.athena_dbt.workgroup_arn
+  )
+
+  bronze_database_name = (
+    module.glue_catalog.database_names["bronze"]
+  )
+}
