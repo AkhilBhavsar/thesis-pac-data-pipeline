@@ -1,8 +1,14 @@
+import os
+
 from dagster_dbt import (
     DbtCliResource,
     dbt_assets,
 )
 
+from thesis_orchestration.bronze_runtime import (
+    BronzeGateResource,
+    run_bronze_guarded_dbt,
+)
 from thesis_orchestration.paths import (
     DBT_EXECUTABLE,
     DBT_PROFILE_NAME,
@@ -29,6 +35,27 @@ dbt_resource = DbtCliResource(
 )
 
 
+bronze_gate_resource = (
+    BronzeGateResource(
+        region_name=os.getenv(
+            "THESIS_AWS_REGION",
+            "eu-west-1",
+        ),
+        expected_bucket=os.getenv(
+            "THESIS_BRONZE_BUCKET",
+            (
+                "thesis-pac-dev-data-lake-"
+                "522814714524-eu-west-1"
+            ),
+        ),
+        expected_prefix=os.getenv(
+            "THESIS_BRONZE_PREFIX",
+            "bronze/",
+        ),
+    )
+)
+
+
 @dbt_assets(
     manifest=MANIFEST_PATH,
     select=DBT_ASSET_SELECTION,
@@ -37,10 +64,13 @@ dbt_resource = DbtCliResource(
 def thesis_dbt_assets(
     context,
     dbt: DbtCliResource,
+    bronze_gate: BronzeGateResource,
 ):
-    """Execute only the dbt assets selected by Dagster."""
+    """Execute dbt only after Bronze passes."""
 
-    yield from dbt.cli(
-        ["build"],
+    yield from run_bronze_guarded_dbt(
         context=context,
-    ).stream()
+        dbt=dbt,
+        bronze_gate=bronze_gate,
+        manifest_path=MANIFEST_PATH,
+    )
