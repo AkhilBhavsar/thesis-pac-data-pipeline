@@ -3,15 +3,282 @@ name: C0 Isolated Pipeline
 on:
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: c0-isolated-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  registration-only:
-    name: Registration only
-    if: ${{ false }}
+  c0-isolated:
+    name: Atomic isolated C0
+    if: ${{ github.ref == 'refs/heads/feature/dagster-orchestration' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      AWS_REGION: eu-west-1
+      AWS_DEFAULT_REGION: eu-west-1
+
+      EXPECTED_AWS_ACCOUNT_ID: "522814714524"
+      EXPECTED_ROLE_NAME: thesis-pac-dev-github-c0
+      C0_ROLE_ARN: arn:aws:iam::522814714524:role/thesis-pac-dev-github-c0
+
+      DATA_LAKE_BUCKET: thesis-pac-dev-data-lake-522814714524-eu-west-1
+      ATHENA_RESULTS_BUCKET: thesis-pac-dev-athena-results-522814714524-eu-west-1
+      DBT_ATHENA_WORKGROUP: thesis-pac-dev-dbt-transform
+
+      THESIS_EXPERIMENT_CONDITION: C0
+      THESIS_SCENARIO_ID: baseline
+      THESIS_AWS_REGION: eu-west-1
+      THESIS_BRONZE_BUCKET: thesis-pac-dev-data-lake-522814714524-eu-west-1
+      THESIS_BRONZE_PREFIX: bronze/
 
     steps:
-      - name: No execution on the default branch
+      - name: Checkout locked feature revision
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Guard workflow branch and revision
+        shell: bash
         run: |
-          echo "This default-branch file only registers workflow_dispatch."
+          set -euo pipefail
+
+          test "$GITHUB_REF" = \
+            "refs/heads/feature/dagster-orchestration"
+
+          test "$GITHUB_REF_NAME" = \
+            "feature/dagster-orchestration"
+
+          test "$(git rev-parse HEAD)" = \
+            "$GITHUB_SHA"
+
+          test -z "$(
+            git status \
+              --porcelain=v1 \
+              --untracked-files=all
+          )"
+
+      - name: Set up Python 3.11.14
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.11.14"
+          cache: pip
+          cache-dependency-path: orchestration/dagster/pyproject.toml
+
+      - name: Install pinned orchestration toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python -m pip install \
+            --disable-pip-version-check \
+            -e orchestration/dagster
+
+      - name: Initialise isolated C0 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RUN_KEY="gha_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          SCHEMA_BASE="thesis_pac_c0_${RUN_KEY}"
+
+          SILVER_SCHEMA="${SCHEMA_BASE}_silver"
+          GOLD_INTERNAL_SCHEMA="${SCHEMA_BASE}_gold_internal"
+          GOLD_PUBLIC_SCHEMA="${SCHEMA_BASE}_gold_public"
+
+          EVIDENCE_ROOT="${RUNNER_TEMP}/c0-evidence"
+          PROFILE_DIR="${RUNNER_TEMP}/dbt-profiles"
+
+          DATA_ROOT="s3://${DATA_LAKE_BUCKET}/experiments/c0/github-actions/${RUN_KEY}/data/"
+          RESULTS_ROOT="s3://${ATHENA_RESULTS_BUCKET}/experiments/c0/github-actions/${RUN_KEY}/athena/"
+
+          mkdir -p \
+            "$EVIDENCE_ROOT" \
+            "$PROFILE_DIR"
+
+          cp \
+            transformations/dbt/profiles.yml.example \
+            "${PROFILE_DIR}/profiles.yml"
+
+          {
+            echo "C0_RUN_KEY=${RUN_KEY}"
+            echo "DBT_ATHENA_SCHEMA=${SILVER_SCHEMA}"
+            echo "DBT_GOLD_INTERNAL_SCHEMA=${GOLD_INTERNAL_SCHEMA}"
+            echo "DBT_GOLD_PUBLIC_SCHEMA=${GOLD_PUBLIC_SCHEMA}"
+            echo "DBT_ATHENA_STAGING_DIR=${RESULTS_ROOT}"
+            echo "DBT_ATHENA_DATA_DIR=${DATA_ROOT}"
+            echo "DBT_ATHENA_DATA_BUCKET=${DATA_LAKE_BUCKET}"
+            echo "DBT_ZONE_EXTERNAL_ROOT=${DATA_ROOT%/}"
+            echo "THESIS_DBT_PROFILES_DIR=${PROFILE_DIR}"
+            echo "THESIS_DBT_MANIFEST_PATH=${GITHUB_WORKSPACE}/transformations/dbt/target/manifest.json"
+            echo "THESIS_DBT_EXECUTABLE=$(command -v dbt)"
+            echo "THESIS_DAGSTER_EVIDENCE_ROOT=${EVIDENCE_ROOT}"
+            echo "THESIS_GIT_BRANCH=${GITHUB_REF_NAME}"
+            echo "THESIS_GIT_COMMIT=${GITHUB_SHA}"
+          } >> "$GITHUB_ENV"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = (
+              Path(os.environ["RUNNER_TEMP"])
+              / "c0-evidence"
+          )
+
+          payload = {
+              "status": "INITIALISED",
+              "github_repository": os.environ[
+                  "GITHUB_REPOSITORY"
+              ],
+              "github_ref": os.environ[
+                  "GITHUB_REF"
+              ],
+              "github_sha": os.environ[
+                  "GITHUB_SHA"
+              ],
+              "github_run_id": os.environ[
+                  "GITHUB_RUN_ID"
+              ],
+              "github_run_attempt": os.environ[
+                  "GITHUB_RUN_ATTEMPT"
+              ],
+          }
+
+          (
+              root
+              / "workflow-context.json"
+          ).write_text(
+              json.dumps(
+                  payload,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Record pinned toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          {
+            python --version
+            dbt --version
+
+            python - <<'PY'
+          from importlib.metadata import version
+
+          for package in [
+              "dagster",
+              "dagster-dbt",
+              "dagster-webserver",
+              "dbt-core",
+              "dbt-athena-community",
+              "boto3",
+          ]:
+              print(
+                  f"{package}=={version(package)}"
+              )
+          PY
+          } | tee \
+            "${THESIS_DAGSTER_EVIDENCE_ROOT}/toolchain-versions.txt"
+
+          python -m pip freeze |
+            LC_ALL=C sort \
+            > "${THESIS_DAGSTER_EVIDENCE_ROOT}/pip-freeze.txt"
+
+      - name: Assume AWS role through GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          role-to-assume: ${{ env.C0_ROLE_ARN }}
+          role-session-name: gha-c0-${{ github.run_id }}-${{ github.run_attempt }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-duration-seconds: 3600
+          allowed-account-ids: ${{ env.EXPECTED_AWS_ACCOUNT_ID }}
+          unset-current-credentials: true
+          mask-aws-account-id: false
+
+      - name: Generate dbt manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf \
+            transformations/dbt/target \
+            transformations/dbt/logs
+
+          dbt \
+            --no-use-colors \
+            --no-version-check \
+            parse \
+            --project-dir transformations/dbt \
+            --profiles-dir "$THESIS_DBT_PROFILES_DIR" \
+            --target dev \
+            2>&1 |
+          tee \
+            "${THESIS_DAGSTER_EVIDENCE_ROOT}/dbt-parse.log"
+
+          test -s "$THESIS_DBT_MANIFEST_PATH"
+
+      - name: Execute atomic isolated C0 pipeline
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PYTHONPATH="$GITHUB_WORKSPACE/orchestration/dagster" \
+          python \
+            scripts/github_actions/run_c0_isolated.py \
+            execute \
+            --evidence-root \
+            "$THESIS_DAGSTER_EVIDENCE_ROOT"
+
+      - name: Publish workflow summary
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EVIDENCE_ROOT="${THESIS_DAGSTER_EVIDENCE_ROOT:-${RUNNER_TEMP}/c0-evidence}"
+
+          {
+            echo "# C0 Isolated Pipeline"
+            echo
+
+            if test -f \
+              "${EVIDENCE_ROOT}/final-checkpoint.json"
+            then
+              echo '```json'
+              cat \
+                "${EVIDENCE_ROOT}/final-checkpoint.json"
+              echo '```'
+
+            elif test -f \
+              "${EVIDENCE_ROOT}/failure.json"
+            then
+              echo '```json'
+              cat \
+                "${EVIDENCE_ROOT}/failure.json"
+              echo '```'
+
+            else
+              echo "No final checkpoint was produced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload durable C0 evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: c0-isolated-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/c0-evidence
+          if-no-files-found: error
+          retention-days: 30
