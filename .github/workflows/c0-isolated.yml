@@ -1,0 +1,17 @@
+name: C0 Isolated Pipeline
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  registration-only:
+    name: Registration only
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: No execution on the default branch
+        run: |
+          echo "This default-branch file only registers workflow_dispatch."
