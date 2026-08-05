@@ -428,6 +428,85 @@ def validate_bronze_evidence(
     }
 
 
+def dbt_target_root(
+    *,
+    repository_root: Path,
+) -> Path:
+    return (
+        repository_root
+        / "transformations"
+        / "dbt"
+        / "target"
+    )
+
+
+def snapshot_dagster_dbt_targets(
+    *,
+    repository_root: Path,
+) -> set[Path]:
+    target_root = dbt_target_root(
+        repository_root=repository_root,
+    )
+
+    if not target_root.is_dir():
+        return set()
+
+    return {
+        candidate.resolve()
+        for candidate in target_root.glob(
+            "thesis_dbt_assets-*"
+        )
+        if candidate.is_dir()
+    }
+
+
+def resolve_dagster_dbt_target(
+    *,
+    repository_root: Path,
+    targets_before: set[Path],
+) -> Path:
+    targets_after = (
+        snapshot_dagster_dbt_targets(
+            repository_root=repository_root,
+        )
+    )
+
+    new_targets = sorted(
+        targets_after - targets_before,
+        key=lambda candidate: candidate.name,
+    )
+
+    if len(new_targets) != 1:
+        raise RuntimeError(
+            "Expected exactly one new Dagster-dbt "
+            "target directory; found "
+            f"{len(new_targets)}: "
+            f"{[path.name for path in new_targets]}"
+        )
+
+    resolved_target = new_targets[0]
+
+    required_artifacts = [
+        resolved_target / "manifest.json",
+        resolved_target / "run_results.json",
+    ]
+
+    missing_artifacts = [
+        artifact.name
+        for artifact in required_artifacts
+        if not artifact.is_file()
+    ]
+
+    if missing_artifacts:
+        raise RuntimeError(
+            "Resolved Dagster-dbt target is missing "
+            "required artifacts: "
+            f"{missing_artifacts}"
+        )
+
+    return resolved_target
+
+
 def validate_dbt_results(
     run_results_path: Path,
 ) -> dict[str, Any]:
@@ -911,6 +990,7 @@ def copy_dbt_artifacts(
     *,
     repository_root: Path,
     evidence_root: Path,
+    dbt_target_path: Path | None = None,
 ) -> None:
     destination = (
         evidence_root
@@ -922,19 +1002,21 @@ def copy_dbt_artifacts(
         exist_ok=True,
     )
 
+    resolved_target_path = (
+        dbt_target_path
+        if dbt_target_path is not None
+        else dbt_target_root(
+            repository_root=repository_root,
+        )
+    )
+
     candidates = {
         (
-            repository_root
-            / "transformations"
-            / "dbt"
-            / "target"
+            resolved_target_path
             / "manifest.json"
         ): destination / "manifest.json",
         (
-            repository_root
-            / "transformations"
-            / "dbt"
-            / "target"
+            resolved_target_path
             / "run_results.json"
         ): destination / "run_results.json",
         (
@@ -1208,6 +1290,35 @@ def execute(
         before,
     )
 
+    dbt_targets_before = (
+        snapshot_dagster_dbt_targets(
+            repository_root=repository_root,
+        )
+    )
+
+    write_json(
+        evidence_root
+        / "dbt-target-before.json",
+        {
+            "status": "PASS",
+            "target_root": str(
+                dbt_target_root(
+                    repository_root=repository_root,
+                ).relative_to(
+                    repository_root
+                )
+            ),
+            "directories": sorted(
+                str(
+                    target.relative_to(
+                        repository_root
+                    )
+                )
+                for target in dbt_targets_before
+            ),
+        },
+    )
+
     execution_started = (
         datetime.now(timezone.utc)
     )
@@ -1302,6 +1413,43 @@ def execute(
             "bronze_silver_gold_job failed."
         )
 
+    dbt_target_path = (
+        resolve_dagster_dbt_target(
+            repository_root=repository_root,
+            targets_before=dbt_targets_before,
+        )
+    )
+
+    write_json(
+        evidence_root
+        / "dbt-target-resolution.json",
+        {
+            "status": "PASS",
+            "strategy": (
+                "SINGLE_NEW_DAGSTER_DBT_TARGET"
+            ),
+            "relative_path": str(
+                dbt_target_path.relative_to(
+                    repository_root
+                )
+            ),
+            "directory_name": (
+                dbt_target_path.name
+            ),
+            "manifest_sha256": file_sha256(
+                dbt_target_path
+                / "manifest.json"
+            ),
+            "run_results_sha256": file_sha256(
+                dbt_target_path
+                / "run_results.json"
+            ),
+            "preexisting_target_count": len(
+                dbt_targets_before
+            ),
+        },
+    )
+
     write_json(
         evidence_root
         / "dagster-summary.json",
@@ -1343,10 +1491,7 @@ def execute(
     )
 
     run_results_path = (
-        repository_root
-        / "transformations"
-        / "dbt"
-        / "target"
+        dbt_target_path
         / "run_results.json"
     )
 
@@ -1354,10 +1499,24 @@ def execute(
         run_results_path
     )
 
+    dbt_summary[
+        "target_path"
+    ] = str(
+        dbt_target_path.relative_to(
+            repository_root
+        )
+    )
+
     write_json(
         evidence_root
         / "dbt-summary.json",
         dbt_summary,
+    )
+
+    copy_dbt_artifacts(
+        repository_root=repository_root,
+        evidence_root=evidence_root,
+        dbt_target_path=dbt_target_path,
     )
 
     isolated_inventory = shadow_inventory(
@@ -1388,11 +1547,6 @@ def execute(
         evidence_root
         / "athena-query-inventory.json",
         query_inventory,
-    )
-
-    copy_dbt_artifacts(
-        repository_root=repository_root,
-        evidence_root=evidence_root,
     )
 
     checkpoint = {
@@ -1678,9 +1832,57 @@ def main() -> int:
             .parents[2]
         )
 
+        dbt_target_path = None
+
+        resolution_path = (
+            evidence_root
+            / "dbt-target-resolution.json"
+        )
+
+        if resolution_path.is_file():
+            try:
+                resolution = json.loads(
+                    resolution_path.read_text(
+                        encoding="utf-8"
+                    )
+                )
+
+                relative_path = resolution.get(
+                    "relative_path"
+                )
+
+                if isinstance(
+                    relative_path,
+                    str,
+                ):
+                    candidate = (
+                        repository_root
+                        / relative_path
+                    ).resolve()
+
+                    expected_parent = (
+                        dbt_target_root(
+                            repository_root=(
+                                repository_root
+                            ),
+                        )
+                        .resolve()
+                    )
+
+                    if (
+                        candidate.parent
+                        == expected_parent
+                        and candidate.is_dir()
+                    ):
+                        dbt_target_path = candidate
+
+            except BaseException:
+                dbt_target_path = None
+
         copy_dbt_artifacts(
             repository_root=repository_root,
             evidence_root=evidence_root,
+            dbt_target_path=dbt_target_path,
         )
 
         create_checksums(
