@@ -1,5 +1,11 @@
 {{ config(tags=['gold']) }}
 
+-- depends_on: {{ ref('gold_daily_sales') }}
+-- depends_on: {{ ref('gold_sales_by_state') }}
+-- depends_on: {{ ref('gold_product_category_revenue') }}
+-- depends_on: {{ ref('gold_customer_order_summary') }}
+-- depends_on: {{ ref('gold_public_sales_dashboard') }}
+
 {% set gold_internal_schema = env_var(
     'DBT_GOLD_INTERNAL_SCHEMA',
     'thesis_pac_dev_gold_internal'
