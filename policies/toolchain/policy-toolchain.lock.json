@@ -1,0 +1,33 @@
+{
+  "lock_version": "1.0.0",
+  "policy_condition": "C1",
+  "platform": {
+    "os": "darwin",
+    "architecture": "arm64"
+  },
+  "opa": {
+    "version": "1.19.0",
+    "repository": "open-policy-agent/opa",
+    "release_tag": "v1.19.0",
+    "asset": "opa_darwin_arm64_static",
+    "sha256": "6de003137cc54b65cb4a6a9c7cf6b29a248f10c1c16fc34f793a8a83b5f9d004"
+  },
+  "conftest": {
+    "version": "0.69.0",
+    "repository": "open-policy-agent/conftest",
+    "release_tag": "v0.69.0",
+    "asset": "conftest_0.69.0_Darwin_arm64.tar.gz",
+    "asset_sha256": "78302d045f0ec52e9786a06c6c621ac4516b4c5dd1e54efc8050c86c29b964d9",
+    "binary_sha256": "0534d8d2636d2ab5bb8284cf9a13c8a534108ce976e983ab4f5e2d9cf400b1a1"
+  },
+  "jsonschema": {
+    "version": "4.26.0",
+    "requirement": "jsonschema==4.26.0",
+    "schema_draft": "2020-12"
+  },
+  "experimental_boundary": {
+    "policy_as_code_required": true,
+    "self_healing_permitted": false,
+    "automatic_remediation_permitted": false
+  }
+}
