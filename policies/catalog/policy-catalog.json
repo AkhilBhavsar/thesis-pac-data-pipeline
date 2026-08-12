@@ -146,7 +146,7 @@
         "policy_false_positive"
       ],
       "description": "Deny promotion when governed source or output freshness exceeds its configured threshold.",
-      "implemented": false
+      "implemented": true
     },
     {
       "policy_id": "PAC-RUNTIME-001",
