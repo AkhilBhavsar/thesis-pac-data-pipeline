@@ -49,7 +49,7 @@
         "policy_false_positive"
       ],
       "description": "Require the normalized governance metadata needed to make a reproducible policy decision.",
-      "implemented": false
+      "implemented": true
     },
     {
       "policy_id": "PAC-SCHEMA-001",
@@ -116,7 +116,7 @@
         "policy_false_positive"
       ],
       "description": "Deny promotion when any blocking policy violation remains unresolved.",
-      "implemented": false
+      "implemented": true
     },
     {
       "policy_id": "PAC-QUALITY-001",
