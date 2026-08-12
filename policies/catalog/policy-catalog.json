@@ -131,7 +131,7 @@
         "policy_false_positive"
       ],
       "description": "Deny promotion when a governed critical data-quality validation fails.",
-      "implemented": false
+      "implemented": true
     },
     {
       "policy_id": "PAC-FRESH-001",
