@@ -1,0 +1,39 @@
+name: C1 Pre-Execution Policy Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario_id:
+        description: Thesis fault scenario identifier
+        required: true
+        default: baseline
+        type: choice
+        options:
+          - baseline
+          - schema_break
+          - pii_exposure
+          - freshness_breach
+          - quality_regression
+          - policy_false_positive
+
+      promotion_requested:
+        description: Evaluate the release as a promotion request
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  registration-only:
+    name: Registration stub
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Registration marker
+        shell: bash
+        run: |
+          echo "Registration-only default-branch stub."
+          echo "Execute C1 only from feature/policy-as-code-gates."
