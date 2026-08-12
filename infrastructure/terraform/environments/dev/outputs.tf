@@ -122,3 +122,23 @@ output "github_actions_c0_subject" {
   description = "Exact immutable GitHub OIDC subject trusted by the C0 role."
   value       = module.github_actions_c0.github_subject
 }
+
+output "github_actions_c1_role_name" {
+  description = "Name of the isolated C1 GitHub Actions IAM role."
+  value       = module.github_actions_c1.role_name
+}
+
+output "github_actions_c1_role_arn" {
+  description = "ARN of the isolated C1 GitHub Actions IAM role."
+  value       = module.github_actions_c1.role_arn
+}
+
+output "github_actions_c1_policy_arn" {
+  description = "ARN of the isolated C1 GitHub Actions IAM policy."
+  value       = module.github_actions_c1.policy_arn
+}
+
+output "github_actions_c1_subject" {
+  description = "Exact immutable GitHub OIDC subject trusted by the C1 role."
+  value       = module.github_actions_c1.github_subject
+}

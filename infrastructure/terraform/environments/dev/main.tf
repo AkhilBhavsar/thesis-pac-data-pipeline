@@ -102,3 +102,45 @@ module "github_actions_c0" {
     module.glue_catalog.database_names["bronze"]
   )
 }
+
+module "github_actions_c1" {
+  source = "../../modules/github_actions_c1"
+
+  project_name   = var.project_name
+  environment    = var.environment
+  aws_region     = var.aws_region
+  aws_account_id = data.aws_caller_identity.current.account_id
+
+  github_repository    = "AkhilBhavsar/thesis-pac-data-pipeline"
+  github_branch        = "feature/policy-as-code-gates"
+  github_owner_id      = "68535071"
+  github_repository_id = "1302169914"
+
+  github_oidc_provider_arn = (
+    module.github_actions_c0.oidc_provider_arn
+  )
+
+  data_lake_bucket_arn = (
+    module.data_lake.data_lake_bucket_arn
+  )
+
+  athena_results_bucket_arn = (
+    module.data_lake.athena_results_bucket_arn
+  )
+
+  dbt_athena_workgroup_arn = (
+    module.athena_dbt.workgroup_arn
+  )
+
+  canonical_read_database_names = [
+    module.glue_catalog.database_names["silver"],
+    module.glue_catalog.database_names["gold_internal"],
+    module.glue_catalog.database_names["gold_public"]
+  ]
+
+  bronze_database_name = (
+    module.glue_catalog.database_names["bronze"]
+  )
+
+  shadow_database_prefix = "thesis_pac_c1_"
+}
