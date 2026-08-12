@@ -80,7 +80,7 @@
         "policy_false_positive"
       ],
       "description": "Deny governed sensitive fields from public Gold outputs.",
-      "implemented": false
+      "implemented": true
     },
     {
       "policy_id": "PAC-TRANSFORM-001",
