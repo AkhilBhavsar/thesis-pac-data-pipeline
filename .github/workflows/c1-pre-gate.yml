@@ -1,0 +1,809 @@
+name: C1 Pre-Execution Policy Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario_id:
+        description: Thesis fault scenario identifier
+        required: true
+        default: baseline
+        type: choice
+        options:
+          - baseline
+          - schema_break
+          - pii_exposure
+          - freshness_breach
+          - quality_regression
+          - policy_false_positive
+
+      promotion_requested:
+        description: Evaluate the release as a promotion request
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: c1-pre-gate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  c1-pre-gate:
+    name: C1 pre-execution Policy-as-Code gate
+
+    if: ${{ github.ref == 'refs/heads/feature/policy-as-code-gates' }}
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      AWS_REGION: eu-west-1
+      AWS_DEFAULT_REGION: eu-west-1
+
+      EXPECTED_AWS_ACCOUNT_ID: "522814714524"
+      EXPECTED_ROLE_NAME: thesis-pac-dev-github-c1
+      C1_ROLE_ARN: arn:aws:iam::522814714524:role/thesis-pac-dev-github-c1
+
+      DATA_LAKE_BUCKET: thesis-pac-dev-data-lake-522814714524-eu-west-1
+      ATHENA_RESULTS_BUCKET: thesis-pac-dev-athena-results-522814714524-eu-west-1
+      DBT_ATHENA_WORKGROUP: thesis-pac-dev-dbt-transform
+
+      THESIS_EXPERIMENT_CONDITION: C1
+
+      C1_SCENARIO_ID: ${{ inputs.scenario_id }}
+      C1_PROMOTION_REQUESTED: ${{ inputs.promotion_requested }}
+
+      POLICY_BASE_REF: "2764381fa6116c135787b7109c8e38f459a2bd05"
+
+      POLICY_INPUT_SCHEMA: policies/contracts/policy-input.schema.json
+      POLICY_DECISION_SCHEMA: policies/contracts/policy-decision.schema.json
+
+      POLICY_CONTRACT_SQL: transformations/dbt/tests/gold_contract_columns.sql
+      POLICY_PRIVACY_SQL: transformations/dbt/tests/gold_public_privacy.sql
+
+      OPA_VERSION: "1.19.0"
+
+    steps:
+      - name: Checkout locked C1 revision
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Guard C1 workflow branch and revision
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$GITHUB_REF" = \
+            "refs/heads/feature/policy-as-code-gates"
+
+          test "$GITHUB_REF_NAME" = \
+            "feature/policy-as-code-gates"
+
+          test "$(git rev-parse HEAD)" = \
+            "$GITHUB_SHA"
+
+          git cat-file \
+            -e \
+            "${POLICY_BASE_REF}^{commit}"
+
+          test -z "$(
+            git status \
+              --porcelain=v1 \
+              --untracked-files=all
+          )"
+
+      - name: Set up Python 3.11.14
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.11.14"
+          cache: pip
+          cache-dependency-path: orchestration/dagster/pyproject.toml
+
+      - name: Install pinned C1 toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python -m pip install \
+            --disable-pip-version-check \
+            -e orchestration/dagster
+
+          python -m pip install \
+            --disable-pip-version-check \
+            "jsonschema==4.26.0"
+
+      - name: Initialise C1 pre-gate runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RUN_KEY="gha_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          SCHEMA_BASE="thesis_pac_c1_${RUN_KEY}"
+
+          SILVER_SCHEMA="${SCHEMA_BASE}_silver"
+          GOLD_INTERNAL_SCHEMA="${SCHEMA_BASE}_gold_internal"
+          GOLD_PUBLIC_SCHEMA="${SCHEMA_BASE}_gold_public"
+
+          EVIDENCE_ROOT="${RUNNER_TEMP}/c1-pre-gate-evidence"
+          PROFILE_DIR="${RUNNER_TEMP}/dbt-profiles"
+
+          DATA_ROOT="s3://${DATA_LAKE_BUCKET}/experiments/c1/github-actions/${RUN_KEY}/data/"
+          RESULTS_ROOT="s3://${ATHENA_RESULTS_BUCKET}/experiments/c1/github-actions/${RUN_KEY}/athena/"
+
+          mkdir -p \
+            "$EVIDENCE_ROOT" \
+            "$PROFILE_DIR"
+
+          cp \
+            transformations/dbt/profiles.yml.example \
+            "${PROFILE_DIR}/profiles.yml"
+
+          {
+            echo "C1_RUN_KEY=${RUN_KEY}"
+
+            echo "DBT_ATHENA_SCHEMA=${SILVER_SCHEMA}"
+            echo "DBT_GOLD_INTERNAL_SCHEMA=${GOLD_INTERNAL_SCHEMA}"
+            echo "DBT_GOLD_PUBLIC_SCHEMA=${GOLD_PUBLIC_SCHEMA}"
+
+            echo "DBT_ATHENA_STAGING_DIR=${RESULTS_ROOT}"
+            echo "DBT_ATHENA_DATA_DIR=${DATA_ROOT}"
+            echo "DBT_ATHENA_DATA_BUCKET=${DATA_LAKE_BUCKET}"
+            echo "DBT_ZONE_EXTERNAL_ROOT=${DATA_ROOT%/}"
+
+            echo "THESIS_DBT_PROFILES_DIR=${PROFILE_DIR}"
+            echo "THESIS_DBT_MANIFEST_PATH=${GITHUB_WORKSPACE}/transformations/dbt/target/manifest.json"
+
+            echo "THESIS_C1_EVIDENCE_ROOT=${EVIDENCE_ROOT}"
+
+            echo "THESIS_GIT_BRANCH=${GITHUB_REF_NAME}"
+            echo "THESIS_GIT_COMMIT=${GITHUB_SHA}"
+          } >> "$GITHUB_ENV"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = (
+              Path(os.environ["RUNNER_TEMP"])
+              / "c1-pre-gate-evidence"
+          )
+
+          payload = {
+              "status": "INITIALISED",
+              "condition": "C1",
+              "scenario_id": os.environ[
+                  "C1_SCENARIO_ID"
+              ],
+              "promotion_requested": (
+                  os.environ[
+                      "C1_PROMOTION_REQUESTED"
+                  ].lower()
+                  == "true"
+              ),
+              "github_repository": os.environ[
+                  "GITHUB_REPOSITORY"
+              ],
+              "github_ref": os.environ[
+                  "GITHUB_REF"
+              ],
+              "github_sha": os.environ[
+                  "GITHUB_SHA"
+              ],
+              "github_run_id": os.environ[
+                  "GITHUB_RUN_ID"
+              ],
+              "github_run_attempt": os.environ[
+                  "GITHUB_RUN_ATTEMPT"
+              ],
+              "policy_base_ref": os.environ[
+                  "POLICY_BASE_REF"
+              ],
+          }
+
+          (
+              root
+              / "workflow-context.json"
+          ).write_text(
+              json.dumps(
+                  payload,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Record pinned Python and dbt toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          {
+            python --version
+            dbt --version
+
+            python - <<'PY'
+          from importlib.metadata import version
+
+          for package in [
+              "dagster",
+              "dagster-dbt",
+              "dbt-core",
+              "dbt-athena-community",
+              "boto3",
+              "jsonschema",
+          ]:
+              print(
+                  f"{package}=={version(package)}"
+              )
+          PY
+          } > \
+            "${THESIS_C1_EVIDENCE_ROOT}/toolchain-versions.txt"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/toolchain-versions.txt"
+
+          python -m pip freeze |
+            LC_ALL=C sort \
+            > "${THESIS_C1_EVIDENCE_ROOT}/pip-freeze.txt"
+
+      - name: Install pinned OPA 1.19.0
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$(uname -m)" = "x86_64"
+
+          OPA_ROOT="${RUNNER_TEMP}/policy-toolchain"
+          OPA_BIN="${OPA_ROOT}/opa"
+
+          mkdir -p "$OPA_ROOT"
+
+          curl \
+            --fail \
+            --location \
+            --silent \
+            --show-error \
+            "https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64_static" \
+            --output "$OPA_BIN"
+
+          chmod +x "$OPA_BIN"
+
+          "$OPA_BIN" version \
+            > "${THESIS_C1_EVIDENCE_ROOT}/opa-version.txt"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/opa-version.txt"
+
+          grep -q \
+            "Version: ${OPA_VERSION}" \
+            "${THESIS_C1_EVIDENCE_ROOT}/opa-version.txt"
+
+          sha256sum "$OPA_BIN" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/opa-sha256.txt"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/opa-sha256.txt"
+
+          echo "THESIS_OPA_BIN=${OPA_BIN}" \
+            >> "$GITHUB_ENV"
+
+      - name: Assume dedicated C1 role through GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          role-to-assume: ${{ env.C1_ROLE_ARN }}
+          role-session-name: gha-c1-${{ github.run_id }}-${{ github.run_attempt }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-duration-seconds: 3600
+          allowed-account-ids: ${{ env.EXPECTED_AWS_ACCOUNT_ID }}
+          unset-current-credentials: true
+          mask-aws-account-id: false
+
+      - name: Verify dedicated C1 AWS identity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          aws sts get-caller-identity \
+            --output json \
+            > "${THESIS_C1_EVIDENCE_ROOT}/aws-identity.json"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/aws-identity.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = (
+              Path(
+                  os.environ[
+                      "THESIS_C1_EVIDENCE_ROOT"
+                  ]
+              )
+              / "aws-identity.json"
+          )
+
+          identity = json.loads(
+              path.read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          expected_account = os.environ[
+              "EXPECTED_AWS_ACCOUNT_ID"
+          ]
+
+          expected_role = os.environ[
+              "EXPECTED_ROLE_NAME"
+          ]
+
+          if identity["Account"] != expected_account:
+              raise SystemExit(
+                  "Unexpected AWS account"
+              )
+
+          expected_fragment = (
+              f":assumed-role/"
+              f"{expected_role}/"
+          )
+
+          if (
+              expected_fragment
+              not in identity["Arn"]
+          ):
+              raise SystemExit(
+                  "Unexpected assumed IAM role"
+              )
+
+          print(
+              "Dedicated C1 AWS identity: PASS"
+          )
+          PY
+
+      - name: Generate fresh dbt manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf \
+            transformations/dbt/target \
+            transformations/dbt/logs
+
+          dbt \
+            --no-use-colors \
+            --no-version-check \
+            parse \
+            --project-dir transformations/dbt \
+            --profiles-dir "$THESIS_DBT_PROFILES_DIR" \
+            --target dev \
+            > "${THESIS_C1_EVIDENCE_ROOT}/dbt-parse.log" \
+            2>&1
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/dbt-parse.log"
+
+          test -s \
+            "$THESIS_DBT_MANIFEST_PATH"
+
+          sha256sum \
+            "$THESIS_DBT_MANIFEST_PATH" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/manifest-sha256.txt"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/manifest-sha256.txt"
+
+      - name: Collect C1 pre-gate evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python \
+            scripts/policy/collect_pre_gate_evidence.py \
+            --repo-root \
+            "$GITHUB_WORKSPACE" \
+            --base-ref \
+            "$POLICY_BASE_REF" \
+            --manifest \
+            "$THESIS_DBT_MANIFEST_PATH" \
+            --contract-sql \
+            "$GITHUB_WORKSPACE/$POLICY_CONTRACT_SQL" \
+            --privacy-sql \
+            "$GITHUB_WORKSPACE/$POLICY_PRIVACY_SQL" \
+            --output \
+            "${THESIS_C1_EVIDENCE_ROOT}/pre-gate-evidence.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/collector-output.json"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/collector-output.json"
+
+          test -s \
+            "${THESIS_C1_EVIDENCE_ROOT}/pre-gate-evidence.json"
+
+      - name: Build normalized C1 pre-gate input
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python \
+            scripts/policy/build_policy_input.py \
+            --repo-root \
+            "$GITHUB_WORKSPACE" \
+            --schema \
+            "$GITHUB_WORKSPACE/$POLICY_INPUT_SCHEMA" \
+            --evidence \
+            "${THESIS_C1_EVIDENCE_ROOT}/pre-gate-evidence.json" \
+            --stage \
+            pre \
+            --scenario \
+            "$C1_SCENARIO_ID" \
+            --run-key \
+            "$C1_RUN_KEY" \
+            --target-layer \
+            gold_public \
+            --promotion-requested \
+            "$C1_PROMOTION_REQUESTED" \
+            --git-branch \
+            "$GITHUB_REF_NAME" \
+            --git-commit \
+            "$GITHUB_SHA" \
+            --output \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-pre.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/builder-output.json"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/builder-output.json"
+
+          test -s \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-pre.json"
+
+          sha256sum \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-pre.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/policy-input-pre-sha256.txt"
+
+      - name: Validate normalized C1 policy input
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python \
+            scripts/policy/validate_policy_input.py \
+            --schema \
+            "$GITHUB_WORKSPACE/$POLICY_INPUT_SCHEMA" \
+            --input \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-pre.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/policy-input-validation.json"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-validation.json"
+
+          grep -q \
+            '"status": "PASS"' \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-validation.json"
+
+      - name: Evaluate unified C1 pre-execution policy gate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EVALUATOR_RC=0
+
+          set +e
+
+          python \
+            scripts/policy/evaluate_policy_decision.py \
+            --input \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-pre.json" \
+            --output \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-decision-pre.json" \
+            --opa-bin \
+            "$THESIS_OPA_BIN" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/evaluator-stdout.json" \
+            2> "${THESIS_C1_EVIDENCE_ROOT}/evaluator-stderr.txt"
+
+          EVALUATOR_RC=$?
+
+          set -e
+
+          printf '%s\n' "$EVALUATOR_RC" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/evaluator-exit-code.txt"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/evaluator-stdout.json" || true
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/evaluator-stderr.txt" || true
+
+          python - \
+            "$EVALUATOR_RC" <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          root = Path(
+              os.environ[
+                  "THESIS_C1_EVIDENCE_ROOT"
+              ]
+          )
+
+          rc = int(sys.argv[1])
+
+          decision_path = (
+              root
+              / "policy-decision-pre.json"
+          )
+
+          result = {
+              "condition": "C1",
+              "evaluation_stage": "pre",
+              "scenario_id": os.environ[
+                  "C1_SCENARIO_ID"
+              ],
+              "run_key": os.environ[
+                  "C1_RUN_KEY"
+              ],
+              "evaluator_exit_code": rc,
+              "dbt_execution_performed": False,
+              "dagster_execution_performed": False,
+              "self_healing_performed": False,
+          }
+
+          if decision_path.exists():
+              decision = json.loads(
+                  decision_path.read_text(
+                      encoding="utf-8"
+                  )
+              )
+
+              decision_sha = hashlib.sha256(
+                  decision_path.read_bytes()
+              ).hexdigest()
+
+              result.update({
+                  "decision": decision[
+                      "decision"
+                  ],
+                  "allow": decision[
+                      "allow"
+                  ],
+                  "violation_count": decision[
+                      "violation_count"
+                  ],
+                  "triggered_policy_ids": (
+                      decision[
+                          "triggered_policy_ids"
+                      ]
+                  ),
+                  "evaluation_ms": (
+                      decision[
+                          "evaluation_ms"
+                      ]
+                  ),
+                  "input_sha256": (
+                      decision[
+                          "input_sha256"
+                      ]
+                  ),
+                  "policy_bundle_sha256": (
+                      decision[
+                          "policy_bundle_sha256"
+                      ]
+                  ),
+                  "decision_sha256": (
+                      decision_sha
+                  ),
+              })
+
+          if rc == 0:
+              if not decision_path.exists():
+                  raise SystemExit(
+                      "ALLOW exit without decision artifact"
+                  )
+
+              if result["decision"] != "ALLOW":
+                  raise SystemExit(
+                      "Exit 0 without ALLOW decision"
+                  )
+
+              result[
+                  "status"
+              ] = "ALLOW"
+
+              result[
+                  "downstream_execution_authorized"
+              ] = True
+
+          elif rc == 2:
+              if not decision_path.exists():
+                  raise SystemExit(
+                      "DENY exit without decision artifact"
+                  )
+
+              if result["decision"] != "DENY":
+                  raise SystemExit(
+                      "Exit 2 without DENY decision"
+                  )
+
+              result[
+                  "status"
+              ] = "DENY"
+
+              result[
+                  "downstream_execution_authorized"
+              ] = False
+
+          else:
+              result[
+                  "status"
+              ] = "ERROR"
+
+              result[
+                  "downstream_execution_authorized"
+              ] = False
+
+          (
+              root
+              / "pre-gate-final.json"
+          ).write_text(
+              json.dumps(
+                  result,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+
+          print(
+              json.dumps(
+                  result,
+                  indent=2,
+                  sort_keys=True,
+              )
+          )
+          PY
+
+          if test "$EVALUATOR_RC" = "0"
+          then
+            exit 0
+          fi
+
+          if test "$EVALUATOR_RC" = "2"
+          then
+            exit 2
+          fi
+
+          exit 1
+
+      - name: Record downstream execution authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(
+              os.environ[
+                  "THESIS_C1_EVIDENCE_ROOT"
+              ]
+          )
+
+          decision_path = (
+              root
+              / "policy-decision-pre.json"
+          )
+
+          decision = json.loads(
+              decision_path.read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          if decision["decision"] != "ALLOW":
+              raise SystemExit(
+                  "Downstream authorization "
+                  "requires ALLOW"
+              )
+
+          payload = {
+              "status": "AUTHORIZED",
+              "condition": "C1",
+              "run_key": os.environ[
+                  "C1_RUN_KEY"
+              ],
+              "scenario_id": os.environ[
+                  "C1_SCENARIO_ID"
+              ],
+              "policy_decision": "ALLOW",
+              "policy_decision_sha256": (
+                  hashlib.sha256(
+                      decision_path.read_bytes()
+                  ).hexdigest()
+              ),
+              "dbt_execution_performed": False,
+              "dagster_execution_performed": False,
+              "note": (
+                  "C1.12 proves pre-execution "
+                  "authorization only. Pipeline "
+                  "execution is intentionally "
+                  "outside this checkpoint."
+              ),
+          }
+
+          (
+              root
+              / "downstream-authorization.json"
+          ).write_text(
+              json.dumps(
+                  payload,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+
+          print(
+              json.dumps(
+                  payload,
+                  indent=2,
+                  sort_keys=True,
+              )
+          )
+          PY
+
+      - name: Publish C1 pre-gate summary
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EVIDENCE_ROOT="${THESIS_C1_EVIDENCE_ROOT:-${RUNNER_TEMP}/c1-pre-gate-evidence}"
+
+          {
+            echo "# C1 Pre-Execution Policy Gate"
+            echo
+
+            if test -f \
+              "${EVIDENCE_ROOT}/pre-gate-final.json"
+            then
+              echo '```json'
+              cat \
+                "${EVIDENCE_ROOT}/pre-gate-final.json"
+              echo '```'
+
+            elif test -f \
+              "${EVIDENCE_ROOT}/policy-input-validation.json"
+            then
+              echo '```json'
+              cat \
+                "${EVIDENCE_ROOT}/policy-input-validation.json"
+              echo '```'
+
+            else
+              echo "No C1 pre-gate decision was produced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload durable C1 pre-gate evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: c1-pre-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/c1-pre-gate-evidence
+          if-no-files-found: error
+          retention-days: 30
