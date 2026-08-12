@@ -64,7 +64,7 @@
         "policy_false_positive"
       ],
       "description": "Deny removal, incompatible change, or violation of a required governed Gold contract.",
-      "implemented": false
+      "implemented": true
     },
     {
       "policy_id": "PAC-PRIVACY-001",
