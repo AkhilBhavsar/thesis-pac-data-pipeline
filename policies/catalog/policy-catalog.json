@@ -164,7 +164,7 @@
         "policy_false_positive"
       ],
       "description": "Deny promotion when pipeline execution, isolated output validation, canonical protection, or Athena execution integrity fails.",
-      "implemented": false
+      "implemented": true
     }
   ]
 }
