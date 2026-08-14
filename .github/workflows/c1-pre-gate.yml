@@ -780,6 +780,8 @@ jobs:
 
           mkdir -p "$EXECUTION_ROOT"
 
+          export THESIS_DAGSTER_EVIDENCE_ROOT="$EXECUTION_ROOT"
+
           RUNNER_RC=0
 
           set +e
