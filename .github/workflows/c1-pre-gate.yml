@@ -145,6 +145,7 @@ jobs:
 
           {
             echo "C1_RUN_KEY=${RUN_KEY}"
+            echo "THESIS_SCENARIO_ID=${C1_SCENARIO_ID}"
 
             echo "DBT_ATHENA_SCHEMA=${SILVER_SCHEMA}"
             echo "DBT_GOLD_INTERNAL_SCHEMA=${GOLD_INTERNAL_SCHEMA}"
@@ -737,10 +738,11 @@ jobs:
               "dbt_execution_performed": False,
               "dagster_execution_performed": False,
               "note": (
-                  "C1.12 proves pre-execution "
-                  "authorization only. Pipeline "
-                  "execution is intentionally "
-                  "outside this checkpoint."
+                  "Pre-execution ALLOW authorizes "
+                  "the isolated C1 pipeline. "
+                  "Execution and post-execution "
+                  "policy evaluation follow in "
+                  "this workflow."
               ),
           }
 
@@ -766,7 +768,361 @@ jobs:
           )
           PY
 
-      - name: Publish C1 pre-gate summary
+      - name: Execute isolated C1 pipeline after pre-gate ALLOW
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$C1_SCENARIO_ID" = "baseline"
+          test "$THESIS_SCENARIO_ID" = "baseline"
+
+          EXECUTION_ROOT="${THESIS_C1_EVIDENCE_ROOT}/execution"
+
+          mkdir -p "$EXECUTION_ROOT"
+
+          RUNNER_RC=0
+
+          set +e
+
+          PYTHONPATH="${GITHUB_WORKSPACE}/orchestration/dagster" \
+            python \
+            scripts/github_actions/run_c1_isolated.py \
+            execute \
+            --evidence-root \
+            "$EXECUTION_ROOT" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/c1-runner-stdout.log" \
+            2> "${THESIS_C1_EVIDENCE_ROOT}/c1-runner-stderr.log"
+
+          RUNNER_RC=$?
+
+          set -e
+
+          printf '%s\n' "$RUNNER_RC" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/c1-runner-exit-code.txt"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/c1-runner-stdout.log" || true
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/c1-runner-stderr.log" || true
+
+          if test "$RUNNER_RC" != "0"
+          then
+            exit "$RUNNER_RC"
+          fi
+
+          test -s \
+            "${EXECUTION_ROOT}/final-checkpoint.json"
+
+          test -s \
+            "${EXECUTION_ROOT}/dagster-summary.json"
+
+          test -s \
+            "${EXECUTION_ROOT}/canonical-comparison.json"
+
+          test -s \
+            "${EXECUTION_ROOT}/isolated-inventory.json"
+
+          test -s \
+            "${EXECUTION_ROOT}/athena-query-inventory.json"
+
+          test -s \
+            "${EXECUTION_ROOT}/dbt/run_results.json"
+
+      - name: Collect C1 post-execution evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXECUTION_ROOT="${THESIS_C1_EVIDENCE_ROOT}/execution"
+
+          python \
+            scripts/policy/collect_post_gate_evidence.py \
+            --pre-evidence \
+            "${THESIS_C1_EVIDENCE_ROOT}/pre-gate-evidence.json" \
+            --run-results \
+            "${EXECUTION_ROOT}/dbt/run_results.json" \
+            --dagster-summary \
+            "${EXECUTION_ROOT}/dagster-summary.json" \
+            --canonical-comparison \
+            "${EXECUTION_ROOT}/canonical-comparison.json" \
+            --isolated-inventory \
+            "${EXECUTION_ROOT}/isolated-inventory.json" \
+            --athena-query-inventory \
+            "${EXECUTION_ROOT}/athena-query-inventory.json" \
+            --freshness-control \
+            "${GITHUB_WORKSPACE}/data/bronze/generated/freshness_control.csv" \
+            --output \
+            "${THESIS_C1_EVIDENCE_ROOT}/post-gate-evidence.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/post-collector-output.json"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/post-collector-output.json"
+
+          test -s \
+            "${THESIS_C1_EVIDENCE_ROOT}/post-gate-evidence.json"
+
+          sha256sum \
+            "${THESIS_C1_EVIDENCE_ROOT}/post-gate-evidence.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/post-gate-evidence-sha256.txt"
+
+      - name: Build normalized C1 post-execution policy input
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python \
+            scripts/policy/build_policy_input.py \
+            --repo-root \
+            "$GITHUB_WORKSPACE" \
+            --schema \
+            "$GITHUB_WORKSPACE/$POLICY_INPUT_SCHEMA" \
+            --evidence \
+            "${THESIS_C1_EVIDENCE_ROOT}/post-gate-evidence.json" \
+            --stage \
+            post \
+            --scenario \
+            "$C1_SCENARIO_ID" \
+            --run-key \
+            "$C1_RUN_KEY" \
+            --target-layer \
+            gold_public \
+            --promotion-requested \
+            "$C1_PROMOTION_REQUESTED" \
+            --git-branch \
+            "$GITHUB_REF_NAME" \
+            --git-commit \
+            "$GITHUB_SHA" \
+            --output \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/post-builder-output.json"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/post-builder-output.json"
+
+          test -s \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post.json"
+
+          sha256sum \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post-sha256.txt"
+
+      - name: Validate normalized C1 post-execution policy input
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python \
+            scripts/policy/validate_policy_input.py \
+            --schema \
+            "$GITHUB_WORKSPACE/$POLICY_INPUT_SCHEMA" \
+            --input \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post.json" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post-validation.json"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post-validation.json"
+
+          grep -q \
+            '"status": "PASS"' \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post-validation.json"
+
+      - name: Evaluate unified C1 post-execution policy gate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EVALUATOR_RC=0
+
+          set +e
+
+          python \
+            scripts/policy/evaluate_policy_decision.py \
+            --input \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-input-post.json" \
+            --output \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-decision-post.json" \
+            --opa-bin \
+            "$THESIS_OPA_BIN" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/post-evaluator-stdout.json" \
+            2> "${THESIS_C1_EVIDENCE_ROOT}/post-evaluator-stderr.txt"
+
+          EVALUATOR_RC=$?
+
+          set -e
+
+          printf '%s\n' "$EVALUATOR_RC" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/post-evaluator-exit-code.txt"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/post-evaluator-stdout.json" || true
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/post-evaluator-stderr.txt" || true
+
+          python - \
+            "$EVALUATOR_RC" <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          root = Path(
+              os.environ[
+                  "THESIS_C1_EVIDENCE_ROOT"
+              ]
+          )
+
+          rc = int(sys.argv[1])
+
+          decision_path = (
+              root
+              / "policy-decision-post.json"
+          )
+
+          promotion_requested = (
+              os.environ[
+                  "C1_PROMOTION_REQUESTED"
+              ].lower()
+              == "true"
+          )
+
+          result = {
+              "condition": "C1",
+              "evaluation_stage": "post",
+              "scenario_id": os.environ[
+                  "C1_SCENARIO_ID"
+              ],
+              "run_key": os.environ[
+                  "C1_RUN_KEY"
+              ],
+              "evaluator_exit_code": rc,
+              "pipeline_execution_performed": True,
+              "dbt_execution_performed": True,
+              "dagster_execution_performed": True,
+              "post_gate_evaluated": True,
+              "promotion_requested": promotion_requested,
+              "self_healing_performed": False,
+              "automatic_remediation_performed": False,
+          }
+
+          if decision_path.exists():
+              decision = json.loads(
+                  decision_path.read_text(
+                      encoding="utf-8"
+                  )
+              )
+
+              result.update({
+                  "decision": decision[
+                      "decision"
+                  ],
+                  "allow": decision[
+                      "allow"
+                  ],
+                  "violation_count": decision[
+                      "violation_count"
+                  ],
+                  "triggered_policy_ids": decision[
+                      "triggered_policy_ids"
+                  ],
+                  "evaluation_ms": decision[
+                      "evaluation_ms"
+                  ],
+                  "input_sha256": decision[
+                      "input_sha256"
+                  ],
+                  "policy_bundle_sha256": decision[
+                      "policy_bundle_sha256"
+                  ],
+                  "decision_sha256": hashlib.sha256(
+                      decision_path.read_bytes()
+                  ).hexdigest(),
+              })
+
+          if rc == 0:
+              if not decision_path.exists():
+                  raise SystemExit(
+                      "ALLOW exit without post decision artifact"
+                  )
+
+              if result["decision"] != "ALLOW":
+                  raise SystemExit(
+                      "Exit 0 without post ALLOW"
+                  )
+
+              result["status"] = "ALLOW"
+              result[
+                  "promotion_permitted_by_policy"
+              ] = True
+              result[
+                  "promotion_blocked"
+              ] = False
+
+          elif rc == 2:
+              if not decision_path.exists():
+                  raise SystemExit(
+                      "DENY exit without post decision artifact"
+                  )
+
+              if result["decision"] != "DENY":
+                  raise SystemExit(
+                      "Exit 2 without post DENY"
+                  )
+
+              result["status"] = "DENY"
+              result[
+                  "promotion_permitted_by_policy"
+              ] = False
+              result[
+                  "promotion_blocked"
+              ] = promotion_requested
+
+          else:
+              result["status"] = "ERROR"
+              result[
+                  "promotion_permitted_by_policy"
+              ] = False
+              result[
+                  "promotion_blocked"
+              ] = promotion_requested
+
+          (
+              root
+              / "post-gate-final.json"
+          ).write_text(
+              json.dumps(
+                  result,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+
+          print(
+              json.dumps(
+                  result,
+                  indent=2,
+                  sort_keys=True,
+              )
+          )
+          PY
+
+          if test "$EVALUATOR_RC" = "0"
+          then
+            exit 0
+          fi
+
+          if test "$EVALUATOR_RC" = "2"
+          then
+            exit 2
+          fi
+
+          exit 1
+
+      - name: Publish C1 policy-gated pipeline summary
         if: ${{ always() }}
         shell: bash
         run: |
@@ -775,7 +1131,10 @@ jobs:
           EVIDENCE_ROOT="${THESIS_C1_EVIDENCE_ROOT:-${RUNNER_TEMP}/c1-pre-gate-evidence}"
 
           {
-            echo "# C1 Pre-Execution Policy Gate"
+            echo "# C1 Policy-Gated Isolated Pipeline"
+            echo
+
+            echo "## Pre-execution policy decision"
             echo
 
             if test -f \
@@ -785,25 +1144,46 @@ jobs:
               cat \
                 "${EVIDENCE_ROOT}/pre-gate-final.json"
               echo '```'
+            else
+              echo "No pre-execution decision was produced."
+            fi
 
-            elif test -f \
-              "${EVIDENCE_ROOT}/policy-input-validation.json"
+            echo
+            echo "## Isolated pipeline execution"
+            echo
+
+            if test -f \
+              "${EVIDENCE_ROOT}/execution/final-checkpoint.json"
             then
               echo '```json'
               cat \
-                "${EVIDENCE_ROOT}/policy-input-validation.json"
+                "${EVIDENCE_ROOT}/execution/final-checkpoint.json"
               echo '```'
-
             else
-              echo "No C1 pre-gate decision was produced."
+              echo "No successful isolated execution checkpoint was produced."
+            fi
+
+            echo
+            echo "## Post-execution policy decision"
+            echo
+
+            if test -f \
+              "${EVIDENCE_ROOT}/post-gate-final.json"
+            then
+              echo '```json'
+              cat \
+                "${EVIDENCE_ROOT}/post-gate-final.json"
+              echo '```'
+            else
+              echo "No post-execution decision was produced."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload durable C1 pre-gate evidence
+      - name: Upload durable C1 policy-gated evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: c1-pre-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          name: c1-policy-gated-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/c1-pre-gate-evidence
           if-no-files-found: error
           retention-days: 30
