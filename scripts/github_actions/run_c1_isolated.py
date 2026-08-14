@@ -1227,7 +1227,7 @@ def execute(
             "schemas": schemas,
             "data_root_uri": data_root_uri,
             "results_root_uri": results_root_uri,
-            "pac_active": False,
+            "pac_active": True,
             "self_healing_active": False,
             "automatic_remediation_active": False,
         },
@@ -1555,7 +1555,7 @@ def execute(
             "GITHUB_ACTIONS_C1_ATOMIC_RUN"
         ),
         "condition": "C1",
-        "scenario": "baseline",
+        "scenario": scenario,
         "branch": branch,
         "commit": commit,
         "github_run_id": os.getenv(
@@ -1618,8 +1618,8 @@ def execute(
             "s3_changes": 0,
         },
         "experiment_controls": {
-            "pac_active": False,
-            "opa_conftest_active": False,
+            "pac_active": True,
+            "opa_conftest_active": True,
             "self_healing_active": False,
             "automatic_remediation_active": False,
         },
