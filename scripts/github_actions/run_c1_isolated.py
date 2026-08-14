@@ -1619,7 +1619,7 @@ def execute(
         },
         "experiment_controls": {
             "pac_active": True,
-            "opa_conftest_active": True,
+            "opa_conftest_active": False,
             "self_healing_active": False,
             "automatic_remediation_active": False,
         },
