@@ -407,13 +407,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          if test "$C1_SCENARIO_ID" != "schema_break"
-          then
-            echo "No PRE fault injection required for scenario: $C1_SCENARIO_ID"
-            exit 0
-          fi
+          case "$C1_SCENARIO_ID" in
+            schema_break|pii_exposure)
+              ;;
+            *)
+              echo "No PRE fault injection required for scenario: $C1_SCENARIO_ID"
+              exit 0
+              ;;
+          esac
 
-          test "$THESIS_SCENARIO_ID" = "schema_break"
+          test "$THESIS_SCENARIO_ID" = "$C1_SCENARIO_ID"
 
           git diff             --exit-code             -- "$POLICY_CONTRACT_SQL"
 
@@ -421,7 +424,7 @@ jobs:
 
           mkdir -p             "$FAULT_EVIDENCE_ROOT"
 
-          python             scripts/experiments/inject_fault_scenario.py             --scenario             schema_break             --repo-root             "$GITHUB_WORKSPACE"             --evidence-dir             "$FAULT_EVIDENCE_ROOT"             > "${THESIS_C1_EVIDENCE_ROOT}/fault-injector-stdout.json"
+          python             scripts/experiments/inject_fault_scenario.py             --scenario             "$C1_SCENARIO_ID"             --repo-root             "$GITHUB_WORKSPACE"             --evidence-dir             "$FAULT_EVIDENCE_ROOT"             > "${THESIS_C1_EVIDENCE_ROOT}/fault-injector-stdout.json"
 
           cat             "${THESIS_C1_EVIDENCE_ROOT}/fault-injector-stdout.json"
 
@@ -441,6 +444,10 @@ jobs:
               ]
           )
 
+          scenario = os.environ[
+              "C1_SCENARIO_ID"
+          ]
+
           payload = json.loads(
               (
                   root
@@ -451,94 +458,152 @@ jobs:
               )
           )
 
-          assert (
-              payload["condition"]
-              == "C1"
-          )
+          assert payload["condition"] == "C1"
+          assert payload["scenario_id"] == scenario
 
-          assert (
-              payload["scenario_id"]
-              == "schema_break"
-          )
+          expected_by_scenario = {
+              "schema_break": {
+                  "target_model": (
+                      "gold_customer_order_summary"
+                  ),
+                  "operation": (
+                      "remove_required_contract_column"
+                  ),
+                  "column": (
+                      "average_order_value"
+                  ),
+                  "ordinal": 11,
+                  "expected_column_count": 11,
+                  "actual_column_count": 10,
+                  "missing_columns": [
+                      "average_order_value"
+                  ],
+                  "unexpected_columns": [],
+                  "primary_policy_id": (
+                      "PAC-SCHEMA-001"
+                  ),
+                  "release_policy_id": (
+                      "PAC-RELEASE-001"
+                  ),
+              },
+              "pii_exposure": {
+                  "target_model": (
+                      "gold_public_sales_dashboard"
+                  ),
+                  "operation": (
+                      "add_forbidden_public_"
+                      "contract_column"
+                  ),
+                  "column": (
+                      "synthetic_email"
+                  ),
+                  "ordinal": 9,
+                  "expected_column_count": 8,
+                  "actual_column_count": 9,
+                  "missing_columns": [],
+                  "unexpected_columns": [
+                      "synthetic_email"
+                  ],
+                  "detected_forbidden_columns": [
+                      "synthetic_email"
+                  ],
+                  "primary_policy_id": (
+                      "PAC-PRIVACY-001"
+                  ),
+                  "defence_in_depth_policy_id": (
+                      "PAC-SCHEMA-001"
+                  ),
+                  "release_policy_id": (
+                      "PAC-RELEASE-001"
+                  ),
+              },
+          }
 
-          assert (
-              payload["target_model"]
-              == "gold_customer_order_summary"
-          )
+          if scenario not in expected_by_scenario:
+              raise SystemExit(
+                  f"Unexpected PRE scenario: {scenario}"
+              )
 
-          assert (
-              payload[
-                  "fault"
-              ][
-                  "operation"
-              ]
-              == "remove_required_contract_column"
-          )
-
-          assert (
-              payload[
-                  "fault"
-              ][
-                  "column"
-              ]
-              == "average_order_value"
-          )
-
-          assert (
-              payload[
-                  "fault"
-              ][
-                  "ordinal"
-              ]
-              == 11
-          )
-
-          expected = payload[
-              "expected_effect"
+          expected = expected_by_scenario[
+              scenario
           ]
 
           assert (
-              expected[
-                  "expected_column_count"
-              ]
-              == 11
+              payload["target_model"]
+              == expected["target_model"]
+          )
+
+          fault = payload["fault"]
+
+          assert (
+              fault["operation"]
+              == expected["operation"]
           )
 
           assert (
-              expected[
-                  "actual_column_count"
-              ]
-              == 10
+              fault["column"]
+              == expected["column"]
           )
 
           assert (
-              expected[
-                  "missing_columns"
-              ]
-              == [
-                  "average_order_value"
-              ]
+              fault["ordinal"]
+              == expected["ordinal"]
+          )
+
+          effect = payload[
+              "expected_effect"
+          ]
+
+          for field in (
+              "expected_column_count",
+              "actual_column_count",
+              "missing_columns",
+              "unexpected_columns",
+              "primary_policy_id",
+              "release_policy_id",
+          ):
+              assert (
+                  effect[field]
+                  == expected[field]
+              )
+
+          if scenario == "pii_exposure":
+              assert (
+                  effect[
+                      "detected_forbidden_columns"
+                  ]
+                  == expected[
+                      "detected_forbidden_columns"
+                  ]
+              )
+
+              assert (
+                  effect[
+                      "defence_in_depth_policy_id"
+                  ]
+                  == expected[
+                      "defence_in_depth_policy_id"
+                  ]
+              )
+
+          assert (
+              effect["evaluation_stage"]
+              == "pre"
           )
 
           assert (
-              expected[
-                  "unexpected_columns"
-              ]
-              == []
+              effect["decision"]
+              == "DENY"
           )
 
           assert (
-              expected[
-                  "primary_policy_id"
-              ]
-              == "PAC-SCHEMA-001"
+              effect["pipeline_execution"]
+              is False
           )
 
           assert (
-              expected[
-                  "release_policy_id"
-              ]
-              == "PAC-RELEASE-001"
+              effect["promotion"]
+              == "BLOCKED"
           )
 
           safety = payload["safety"]
@@ -595,8 +660,8 @@ jobs:
               )
 
           print(
-              "Schema-break workspace "
-              "injection semantics: PASS"
+              f"{scenario} PRE fault-injection "
+              "semantics: PASS"
           )
           PYFAULT
 
