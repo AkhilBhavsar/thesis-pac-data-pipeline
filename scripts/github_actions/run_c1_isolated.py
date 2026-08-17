@@ -1146,7 +1146,10 @@ def execute(
             f"Unexpected condition: {condition}"
         )
 
-    if scenario != "baseline":
+    if scenario not in {
+        "baseline",
+        "freshness_breach",
+    }:
         raise RuntimeError(
             f"Unexpected scenario: {scenario}"
         )

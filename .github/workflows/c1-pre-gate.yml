@@ -1036,8 +1036,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          test "$C1_SCENARIO_ID" = "baseline"
-          test "$THESIS_SCENARIO_ID" = "baseline"
+          case "$C1_SCENARIO_ID" in
+            baseline|freshness_breach)
+              ;;
+            *)
+              echo "Scenario is not authorized for C1 isolated execution: $C1_SCENARIO_ID"
+              exit 1
+              ;;
+          esac
+
+          test "$THESIS_SCENARIO_ID" = "$C1_SCENARIO_ID"
 
           EXECUTION_ROOT="${THESIS_C1_EVIDENCE_ROOT}/execution"
 
@@ -1094,6 +1102,325 @@ jobs:
           test -s \
             "${EXECUTION_ROOT}/dbt/run_results.json"
 
+      - name: Prepare controlled C1 post-execution freshness evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FRESHNESS_SOURCE="${GITHUB_WORKSPACE}/data/bronze/generated/freshness_control.csv"
+
+          test -s "$FRESHNESS_SOURCE"
+
+          sha256sum             "$FRESHNESS_SOURCE"             > "${THESIS_C1_EVIDENCE_ROOT}/freshness-source-sha256.txt"
+
+          case "$C1_SCENARIO_ID" in
+            baseline)
+              POST_FRESHNESS_CONTROL="$FRESHNESS_SOURCE"
+
+              echo "No POST freshness fault injection required for baseline."
+              ;;
+            freshness_breach)
+              POST_FAULT_ROOT="${THESIS_C1_EVIDENCE_ROOT}/post-fault-injection"
+
+              POST_FRESHNESS_CONTROL="${POST_FAULT_ROOT}/freshness_control.csv"
+
+              mkdir -p "$POST_FAULT_ROOT"
+
+              python                 scripts/experiments/inject_post_fault_scenario.py                 --scenario                 freshness_breach                 --source                 "$FRESHNESS_SOURCE"                 --output                 "$POST_FRESHNESS_CONTROL"                 --evidence-dir                 "$POST_FAULT_ROOT"                 > "${THESIS_C1_EVIDENCE_ROOT}/post-fault-injector-stdout.json"
+
+              cat                 "${THESIS_C1_EVIDENCE_ROOT}/post-fault-injector-stdout.json"
+
+              test -s                 "${POST_FAULT_ROOT}/fault-injection.json"
+
+              test -s                 "${POST_FAULT_ROOT}/fault-injection.patch"
+
+              test -s                 "$POST_FRESHNESS_CONTROL"
+
+              python - <<'PYPOSTFAULT'
+          import csv
+          import hashlib
+          import json
+          import os
+          from datetime import datetime
+          from pathlib import Path
+
+          evidence_root = Path(
+              os.environ[
+                  "THESIS_C1_EVIDENCE_ROOT"
+              ]
+          )
+
+          source = (
+              Path(
+                  os.environ[
+                      "GITHUB_WORKSPACE"
+                  ]
+              )
+              / "data"
+              / "bronze"
+              / "generated"
+              / "freshness_control.csv"
+          )
+
+          fault_root = (
+              evidence_root
+              / "post-fault-injection"
+          )
+
+          injected = (
+              fault_root
+              / "freshness_control.csv"
+          )
+
+          payload = json.loads(
+              (
+                  fault_root
+                  / "fault-injection.json"
+              ).read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          def digest(target: Path) -> str:
+              return hashlib.sha256(
+                  target.read_bytes()
+              ).hexdigest()
+
+          def load_rows(
+              target: Path,
+          ) -> dict[str, dict[str, str]]:
+              with target.open(
+                  "r",
+                  encoding="utf-8",
+                  newline="",
+              ) as handle:
+                  return {
+                      row["dataset_name"]: row
+                      for row in csv.DictReader(
+                          handle
+                      )
+                  }
+
+          def observed_age(
+              row: dict[str, str],
+          ) -> float:
+              expected = (
+                  datetime.fromisoformat(
+                      row[
+                          "expected_publish_time"
+                      ]
+                  )
+              )
+
+              actual = (
+                  datetime.fromisoformat(
+                      row[
+                          "actual_publish_time"
+                      ]
+                  )
+              )
+
+              return max(
+                  0.0,
+                  (
+                      expected
+                      - actual
+                  ).total_seconds(),
+              )
+
+          before = load_rows(source)
+          after = load_rows(injected)
+
+          target = "gold_daily_sales"
+
+          source_sha = digest(source)
+
+          checks = {
+              "scenario": (
+                  payload[
+                      "scenario_id"
+                  ]
+                  == "freshness_breach"
+              ),
+              "target_dataset": (
+                  payload[
+                      "target_dataset"
+                  ]
+                  == target
+              ),
+              "fault_operation": (
+                  payload[
+                      "fault"
+                  ][
+                      "operation"
+                  ]
+                  == (
+                      "shift_actual_publish_"
+                      "time_beyond_slo"
+                  )
+              ),
+              "source_sha_matches": (
+                  payload[
+                      "source_sha256"
+                  ]
+                  == source_sha
+              ),
+              "source_age_86400": (
+                  observed_age(
+                      before[target]
+                  )
+                  == 86400.0
+              ),
+              "injected_age_86401": (
+                  observed_age(
+                      after[target]
+                  )
+                  == 86401.0
+              ),
+              "maximum_age_86400": (
+                  float(
+                      after[target][
+                          "freshness_slo_hours"
+                      ]
+                  )
+                  * 3600.0
+                  == 86400.0
+              ),
+              "csv_status_preserved": (
+                  after[target][
+                      "freshness_status"
+                  ]
+                  == "PASS"
+              ),
+              "actual_timestamp_shifted": (
+                  after[target][
+                      "actual_publish_time"
+                  ]
+                  == "2026-07-05T23:58:00"
+              ),
+              "collector_expected_fail": (
+                  payload[
+                      "expected_effect"
+                  ][
+                      "collector_source_status"
+                  ]
+                  == "FAIL"
+              ),
+              "primary_policy": (
+                  payload[
+                      "expected_effect"
+                  ][
+                      "primary_policy_id"
+                  ]
+                  == "PAC-FRESH-001"
+              ),
+              "release_policy": (
+                  payload[
+                      "expected_effect"
+                  ][
+                      "release_policy_id"
+                  ]
+                  == "PAC-RELEASE-001"
+              ),
+              "source_not_mutated": (
+                  payload[
+                      "safety"
+                  ][
+                      "source_file_mutated"
+                  ]
+                  is False
+              ),
+          }
+
+          for name, passed in checks.items():
+              print(
+                  f"{name}: "
+                  f"{'PASS' if passed else 'FAIL'}"
+              )
+
+          failed = [
+              name
+              for name, passed
+              in checks.items()
+              if not passed
+          ]
+
+          validation = {
+              "status": (
+                  "PASS"
+                  if not failed
+                  else "FAIL"
+              ),
+              "condition": "C1",
+              "scenario_id": (
+                  "freshness_breach"
+              ),
+              "target_dataset": target,
+              "baseline_observed_age_seconds": (
+                  observed_age(
+                      before[target]
+                  )
+              ),
+              "injected_observed_age_seconds": (
+                  observed_age(
+                      after[target]
+                  )
+              ),
+              "maximum_age_seconds": (
+                  float(
+                      after[target][
+                          "freshness_slo_hours"
+                      ]
+                  )
+                  * 3600.0
+              ),
+              "csv_freshness_status": (
+                  after[target][
+                      "freshness_status"
+                  ]
+              ),
+              "expected_collector_status": (
+                  "FAIL"
+              ),
+              "expected_policy_ids": [
+                  "PAC-FRESH-001",
+                  "PAC-RELEASE-001",
+              ],
+              "failed_checks": failed,
+          }
+
+          (
+              evidence_root
+              / "post-fault-validation.json"
+          ).write_text(
+              json.dumps(
+                  validation,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+
+          if failed:
+              raise SystemExit(
+                  "POST freshness fault "
+                  f"validation failed: {failed}"
+              )
+          PYPOSTFAULT
+              ;;
+            *)
+              echo "Unsupported POST-execution scenario: $C1_SCENARIO_ID"
+              exit 1
+              ;;
+          esac
+
+          test -s "$POST_FRESHNESS_CONTROL"
+
+          {
+            echo "THESIS_POST_FRESHNESS_CONTROL_PATH=${POST_FRESHNESS_CONTROL}"
+          } >> "$GITHUB_ENV"
+
       - name: Collect C1 post-execution evidence
         shell: bash
         run: |
@@ -1116,7 +1443,7 @@ jobs:
             --athena-query-inventory \
             "${EXECUTION_ROOT}/athena-query-inventory.json" \
             --freshness-control \
-            "${GITHUB_WORKSPACE}/data/bronze/generated/freshness_control.csv" \
+            "${THESIS_POST_FRESHNESS_CONTROL_PATH}" \
             --output \
             "${THESIS_C1_EVIDENCE_ROOT}/post-gate-evidence.json" \
             > "${THESIS_C1_EVIDENCE_ROOT}/post-collector-output.json"
