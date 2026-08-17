@@ -402,6 +402,204 @@ jobs:
           cat \
             "${THESIS_C1_EVIDENCE_ROOT}/manifest-sha256.txt"
 
+      - name: Apply controlled C1 pre-gate fault injection
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if test "$C1_SCENARIO_ID" != "schema_break"
+          then
+            echo "No PRE fault injection required for scenario: $C1_SCENARIO_ID"
+            exit 0
+          fi
+
+          test "$THESIS_SCENARIO_ID" = "schema_break"
+
+          git diff             --exit-code             -- "$POLICY_CONTRACT_SQL"
+
+          FAULT_EVIDENCE_ROOT="${THESIS_C1_EVIDENCE_ROOT}/fault-injection"
+
+          mkdir -p             "$FAULT_EVIDENCE_ROOT"
+
+          python             scripts/experiments/inject_fault_scenario.py             --scenario             schema_break             --repo-root             "$GITHUB_WORKSPACE"             --evidence-dir             "$FAULT_EVIDENCE_ROOT"             > "${THESIS_C1_EVIDENCE_ROOT}/fault-injector-stdout.json"
+
+          cat             "${THESIS_C1_EVIDENCE_ROOT}/fault-injector-stdout.json"
+
+          test -s             "${FAULT_EVIDENCE_ROOT}/fault-injection.json"
+
+          test -s             "${FAULT_EVIDENCE_ROOT}/fault-injection.patch"
+
+          python - <<'PYFAULT'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          root = Path(
+              os.environ[
+                  "THESIS_C1_EVIDENCE_ROOT"
+              ]
+          )
+
+          payload = json.loads(
+              (
+                  root
+                  / "fault-injection"
+                  / "fault-injection.json"
+              ).read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          assert (
+              payload["condition"]
+              == "C1"
+          )
+
+          assert (
+              payload["scenario_id"]
+              == "schema_break"
+          )
+
+          assert (
+              payload["target_model"]
+              == "gold_customer_order_summary"
+          )
+
+          assert (
+              payload[
+                  "fault"
+              ][
+                  "operation"
+              ]
+              == "remove_required_contract_column"
+          )
+
+          assert (
+              payload[
+                  "fault"
+              ][
+                  "column"
+              ]
+              == "average_order_value"
+          )
+
+          assert (
+              payload[
+                  "fault"
+              ][
+                  "ordinal"
+              ]
+              == 11
+          )
+
+          expected = payload[
+              "expected_effect"
+          ]
+
+          assert (
+              expected[
+                  "expected_column_count"
+              ]
+              == 11
+          )
+
+          assert (
+              expected[
+                  "actual_column_count"
+              ]
+              == 10
+          )
+
+          assert (
+              expected[
+                  "missing_columns"
+              ]
+              == [
+                  "average_order_value"
+              ]
+          )
+
+          assert (
+              expected[
+                  "unexpected_columns"
+              ]
+              == []
+          )
+
+          assert (
+              expected[
+                  "primary_policy_id"
+              ]
+              == "PAC-SCHEMA-001"
+          )
+
+          assert (
+              expected[
+                  "release_policy_id"
+              ]
+              == "PAC-RELEASE-001"
+          )
+
+          safety = payload["safety"]
+
+          assert (
+              safety[
+                  "canonical_data_mutated"
+              ]
+              is False
+          )
+
+          assert (
+              safety[
+                  "aws_mutation_performed"
+              ]
+              is False
+          )
+
+          assert (
+              safety[
+                  "self_healing_permitted"
+              ]
+              is False
+          )
+
+          assert (
+              safety[
+                  "automatic_remediation_permitted"
+              ]
+              is False
+          )
+
+          changed = subprocess.run(
+              [
+                  "git",
+                  "diff",
+                  "--name-only",
+              ],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout.splitlines()
+
+          expected_changed = [
+              os.environ[
+                  "POLICY_CONTRACT_SQL"
+              ]
+          ]
+
+          if changed != expected_changed:
+              raise SystemExit(
+                  "Unexpected tracked workspace "
+                  f"changes: {changed}"
+              )
+
+          print(
+              "Schema-break workspace "
+              "injection semantics: PASS"
+          )
+          PYFAULT
+
       - name: Collect C1 pre-gate evidence
         shell: bash
         run: |
