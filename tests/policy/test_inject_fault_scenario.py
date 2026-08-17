@@ -420,6 +420,36 @@ class PiiExposureInjectorTest(
                 ),
             )
 
+            stdout_payload = json.loads(
+                completed.stdout
+            )
+
+            self.assertEqual(
+                stdout_payload[
+                    "scenario_id"
+                ],
+                "pii_exposure",
+            )
+
+            self.assertEqual(
+                stdout_payload[
+                    "fault_operation"
+                ],
+                "add_forbidden_public_contract_column",
+            )
+
+            self.assertEqual(
+                stdout_payload[
+                    "fault_column"
+                ],
+                "synthetic_email",
+            )
+
+            self.assertNotIn(
+                "removed_column",
+                stdout_payload,
+            )
+
             current = (
                 collector.parse_contract(
                     target.read_text(

@@ -649,7 +649,14 @@ def main() -> int:
                         "target_model"
                     ]
                 ),
-                "removed_column": (
+                "fault_operation": (
+                    payload[
+                        "fault"
+                    ][
+                        "operation"
+                    ]
+                ),
+                "fault_column": (
                     payload[
                         "fault"
                     ][
