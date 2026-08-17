@@ -333,6 +333,315 @@ class SchemaBreakInjectorTest(
             )
 
 
+class PiiExposureInjectorTest(
+    unittest.TestCase
+):
+    def test_pii_exposure_adds_forbidden_public_column(
+        self,
+    ) -> None:
+        collector = (
+            load_collector_module()
+        )
+
+        baseline_text = (
+            SOURCE_CONTRACT
+            .read_text(
+                encoding="utf-8"
+            )
+        )
+
+        baseline = (
+            collector.parse_contract(
+                baseline_text
+            )
+        )
+
+        privacy_file = (
+            REPO_ROOT
+            / "transformations"
+            / "dbt"
+            / "tests"
+            / "gold_public_privacy.sql"
+        )
+
+        forbidden, pattern = (
+            collector.parse_privacy_rule(
+                privacy_file.read_text(
+                    encoding="utf-8"
+                )
+            )
+        )
+
+        with tempfile.TemporaryDirectory() as raw:
+            temp_root = Path(raw)
+
+            target = (
+                temp_root
+                / CONTRACT_RELATIVE
+            )
+
+            target.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            shutil.copy2(
+                SOURCE_CONTRACT,
+                target,
+            )
+
+            evidence = (
+                temp_root
+                / "evidence"
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(INJECTOR),
+                    "--scenario",
+                    "pii_exposure",
+                    "--repo-root",
+                    str(temp_root),
+                    "--evidence-dir",
+                    str(evidence),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(
+                completed.returncode,
+                0,
+                msg=(
+                    completed.stdout
+                    + completed.stderr
+                ),
+            )
+
+            current = (
+                collector.parse_contract(
+                    target.read_text(
+                        encoding="utf-8"
+                    )
+                )
+            )
+
+            model = (
+                "gold_public_sales_dashboard"
+            )
+
+            expected_columns = (
+                collector.contract_columns(
+                    baseline[model]
+                )
+            )
+
+            current_columns = (
+                collector.contract_columns(
+                    current[model]
+                )
+            )
+
+            missing, unexpected = (
+                collector.contract_differences(
+                    expected_columns,
+                    current_columns,
+                )
+            )
+
+            self.assertEqual(
+                len(expected_columns),
+                8,
+            )
+
+            self.assertEqual(
+                len(current_columns),
+                9,
+            )
+
+            self.assertEqual(
+                missing,
+                [],
+            )
+
+            self.assertEqual(
+                unexpected,
+                [
+                    "synthetic_email",
+                ],
+            )
+
+            self.assertEqual(
+                current_columns[-1],
+                "synthetic_email",
+            )
+
+            self.assertIn(
+                "synthetic_email",
+                forbidden,
+            )
+
+            import re
+
+            compiled = re.compile(
+                pattern,
+                re.IGNORECASE,
+            )
+
+            detected = sorted({
+                column
+                for column
+                in current_columns
+                if (
+                    column.lower()
+                    in {
+                        item.lower()
+                        for item in forbidden
+                    }
+                    or compiled.search(
+                        column.lower()
+                    )
+                )
+            })
+
+            self.assertEqual(
+                detected,
+                [
+                    "synthetic_email",
+                ],
+            )
+
+            payload = json.loads(
+                (
+                    evidence
+                    / "fault-injection.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                payload["scenario_id"],
+                "pii_exposure",
+            )
+
+            self.assertEqual(
+                payload["target_model"],
+                model,
+            )
+
+            self.assertEqual(
+                payload[
+                    "fault"
+                ][
+                    "column"
+                ],
+                "synthetic_email",
+            )
+
+            self.assertEqual(
+                payload[
+                    "expected_effect"
+                ][
+                    "primary_policy_id"
+                ],
+                "PAC-PRIVACY-001",
+            )
+
+            self.assertEqual(
+                payload[
+                    "expected_effect"
+                ][
+                    "defence_in_depth_policy_id"
+                ],
+                "PAC-SCHEMA-001",
+            )
+
+            self.assertFalse(
+                payload[
+                    "safety"
+                ][
+                    "canonical_data_mutated"
+                ]
+            )
+
+            self.assertFalse(
+                payload[
+                    "safety"
+                ][
+                    "aws_mutation_performed"
+                ]
+            )
+
+    def test_pii_reinjection_is_rejected(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            temp_root = Path(raw)
+
+            target = (
+                temp_root
+                / CONTRACT_RELATIVE
+            )
+
+            target.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            shutil.copy2(
+                SOURCE_CONTRACT,
+                target,
+            )
+
+            evidence = (
+                temp_root
+                / "evidence"
+            )
+
+            command = [
+                sys.executable,
+                str(INJECTOR),
+                "--scenario",
+                "pii_exposure",
+                "--repo-root",
+                str(temp_root),
+                "--evidence-dir",
+                str(evidence),
+            ]
+
+            first = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(
+                first.returncode,
+                0,
+            )
+
+            second = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(
+                second.returncode,
+                0,
+            )
+
+            self.assertIn(
+                "already appears to be injected",
+                second.stderr,
+            )
+
+
 if __name__ == "__main__":
     unittest.main(
         verbosity=2

@@ -308,6 +308,240 @@ def inject_schema_break(
     return payload
 
 
+
+def inject_pii_exposure(
+    *,
+    repo_root: Path,
+    evidence_dir: Path,
+) -> dict:
+    target_file = (
+        repo_root
+        / CONTRACT_RELATIVE_PATH
+    )
+
+    if not target_file.is_file():
+        raise RuntimeError(
+            "PII-exposure target does not exist: "
+            f"{target_file}"
+        )
+
+    before_bytes = (
+        target_file.read_bytes()
+    )
+
+    before_text = before_bytes.decode(
+        "utf-8"
+    )
+
+    safe_tuple = (
+        "        ('{{ gold_public_schema }}', "
+        "'gold_public_sales_dashboard', "
+        "8, 'total_revenue')"
+    )
+
+    unsafe_tuple = (
+        "        ('{{ gold_public_schema }}', "
+        "'gold_public_sales_dashboard', "
+        "9, 'synthetic_email')"
+    )
+
+    safe_matches = before_text.count(
+        safe_tuple
+    )
+
+    unsafe_matches = before_text.count(
+        unsafe_tuple
+    )
+
+    if safe_matches != 1:
+        raise RuntimeError(
+            "Expected exactly one public Gold "
+            "terminal contract tuple; found "
+            f"{safe_matches}."
+        )
+
+    if unsafe_matches != 0:
+        raise RuntimeError(
+            "PII exposure already appears "
+            "to be injected."
+        )
+
+    replacement = (
+        safe_tuple
+        + ",\n"
+        + unsafe_tuple
+    )
+
+    after_text = before_text.replace(
+        safe_tuple,
+        replacement,
+        1,
+    )
+
+    if after_text == before_text:
+        raise RuntimeError(
+            "PII-exposure injection "
+            "produced no change."
+        )
+
+    if after_text.count(
+        unsafe_tuple
+    ) != 1:
+        raise RuntimeError(
+            "Expected exactly one injected "
+            "synthetic_email tuple."
+        )
+
+    atomic_write_text(
+        target_file,
+        after_text,
+    )
+
+    after_bytes = (
+        target_file.read_bytes()
+    )
+
+    before_sha = sha256_bytes(
+        before_bytes
+    )
+
+    after_sha = sha256_bytes(
+        after_bytes
+    )
+
+    if before_sha == after_sha:
+        raise RuntimeError(
+            "PII-exposure fingerprints "
+            "did not change."
+        )
+
+    evidence_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    patch = "".join(
+        difflib.unified_diff(
+            before_text.splitlines(
+                keepends=True
+            ),
+            after_text.splitlines(
+                keepends=True
+            ),
+            fromfile=(
+                "a/"
+                + str(
+                    CONTRACT_RELATIVE_PATH
+                )
+            ),
+            tofile=(
+                "b/"
+                + str(
+                    CONTRACT_RELATIVE_PATH
+                )
+            ),
+        )
+    )
+
+    atomic_write_text(
+        evidence_dir
+        / "fault-injection.patch",
+        patch,
+    )
+
+    payload = {
+        "schema_version": "1.0.0",
+        "recorded_at_utc": (
+            datetime.now(
+                timezone.utc
+            )
+            .isoformat()
+            .replace(
+                "+00:00",
+                "Z",
+            )
+        ),
+        "condition": "C1",
+        "scenario_id": (
+            "pii_exposure"
+        ),
+        "fault_class": (
+            "public_gold_structural_"
+            "pii_exposure"
+        ),
+        "injection_scope": (
+            "ephemeral_worktree"
+        ),
+        "target_file": str(
+            CONTRACT_RELATIVE_PATH
+        ),
+        "target_model": (
+            "gold_public_sales_dashboard"
+        ),
+        "fault": {
+            "operation": (
+                "add_forbidden_public_"
+                "contract_column"
+            ),
+            "column": (
+                "synthetic_email"
+            ),
+            "ordinal": 9,
+        },
+        "file_sha256_before": (
+            before_sha
+        ),
+        "file_sha256_after": (
+            after_sha
+        ),
+        "expected_effect": {
+            "expected_column_count": 8,
+            "actual_column_count": 9,
+            "missing_columns": [],
+            "unexpected_columns": [
+                "synthetic_email"
+            ],
+            "detected_forbidden_columns": [
+                "synthetic_email"
+            ],
+            "primary_policy_id": (
+                "PAC-PRIVACY-001"
+            ),
+            "defence_in_depth_policy_id": (
+                "PAC-SCHEMA-001"
+            ),
+            "release_policy_id": (
+                "PAC-RELEASE-001"
+            ),
+            "evaluation_stage": "pre",
+            "decision": "DENY",
+            "pipeline_execution": False,
+            "promotion": "BLOCKED",
+        },
+        "safety": {
+            "canonical_data_mutated": (
+                False
+            ),
+            "aws_mutation_performed": (
+                False
+            ),
+            "self_healing_permitted": (
+                False
+            ),
+            "automatic_remediation_permitted": (
+                False
+            ),
+        },
+    }
+
+    write_json(
+        evidence_dir
+        / "fault-injection.json",
+        payload,
+    )
+
+    return payload
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -322,6 +556,7 @@ def parse_args() -> argparse.Namespace:
         required=True,
         choices=[
             "schema_break",
+            "pii_exposure",
         ],
     )
 
@@ -359,6 +594,17 @@ def main() -> int:
         ):
             payload = (
                 inject_schema_break(
+                    repo_root=repo_root,
+                    evidence_dir=(
+                        evidence_dir
+                    ),
+                )
+            )
+        elif args.scenario == (
+            "pii_exposure"
+        ):
+            payload = (
+                inject_pii_exposure(
                     repo_root=repo_root,
                     evidence_dir=(
                         evidence_dir
