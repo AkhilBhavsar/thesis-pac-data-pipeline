@@ -362,7 +362,7 @@ class FreshnessBreachInjectorTest(
                     sys.executable,
                     str(INJECTOR),
                     "--scenario",
-                    "quality_regression",
+                    "policy_false_positive",
                     "--source",
                     str(source),
                     "--output",
@@ -389,6 +389,384 @@ class FreshnessBreachInjectorTest(
                 "Unsupported POST fault scenario",
                 completed.stderr,
             )
+
+
+
+
+class QualityRegressionInjectorTest(
+    unittest.TestCase
+):
+    TARGET = (
+        "test.thesis_pac_pipeline."
+        "gold_financial_reconciliation"
+    )
+
+    @staticmethod
+    def baseline_payload():
+        models = [
+            {
+                "unique_id": (
+                    "model.thesis_pac_pipeline."
+                    f"synthetic_{index:02d}"
+                ),
+                "status": "success",
+            }
+            for index in range(15)
+        ]
+
+        tests = [
+            {
+                "unique_id": (
+                    "test.thesis_pac_pipeline."
+                    f"synthetic_quality_{index:02d}"
+                ),
+                "status": "pass",
+                "failures": 0,
+            }
+            for index in range(40)
+        ]
+
+        tests.append(
+            {
+                "unique_id": (
+                    QualityRegressionInjectorTest
+                    .TARGET
+                ),
+                "status": "pass",
+                "failures": 0,
+                "message": None,
+            }
+        )
+
+        return {
+            "metadata": {
+                "dbt_schema_version": (
+                    "https://schemas.getdbt.com/"
+                    "dbt/run-results/v6.json"
+                ),
+            },
+            "results": models + tests,
+            "elapsed_time": 1.0,
+        }
+
+    @staticmethod
+    def injector_path():
+        return (
+            Path(__file__).resolve()
+            .parents[2]
+            / "scripts"
+            / "experiments"
+            / "inject_post_fault_scenario.py"
+        )
+
+    def test_quality_regression_uses_copy_and_marks_one_test_failed(
+        self,
+    ):
+        import json
+        import subprocess
+        import tempfile
+        from pathlib import Path
+        import sys
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+
+            source_file = (
+                root
+                / "run_results.json"
+            )
+
+            output_file = (
+                root
+                / "fault"
+                / "run_results.json"
+            )
+
+            evidence_dir = (
+                root
+                / "evidence"
+            )
+
+            payload = (
+                self.baseline_payload()
+            )
+
+            source_file.write_text(
+                json.dumps(
+                    payload,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            source_before = (
+                source_file.read_bytes()
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(
+                        self.injector_path()
+                    ),
+                    "--scenario",
+                    "quality_regression",
+                    "--source",
+                    str(source_file),
+                    "--output",
+                    str(output_file),
+                    "--evidence-dir",
+                    str(evidence_dir),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(
+                completed.returncode,
+                0,
+                msg=completed.stderr,
+            )
+
+            self.assertEqual(
+                source_file.read_bytes(),
+                source_before,
+            )
+
+            output = json.loads(
+                output_file.read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            before_by_id = {
+                result["unique_id"]: result
+                for result
+                in payload["results"]
+            }
+
+            after_by_id = {
+                result["unique_id"]: result
+                for result
+                in output["results"]
+            }
+
+            self.assertEqual(
+                set(before_by_id),
+                set(after_by_id),
+            )
+
+            target = after_by_id[
+                self.TARGET
+            ]
+
+            self.assertEqual(
+                target["status"],
+                "fail",
+            )
+
+            self.assertEqual(
+                target["failures"],
+                1,
+            )
+
+            changed = [
+                unique_id
+                for unique_id
+                in before_by_id
+                if (
+                    before_by_id[
+                        unique_id
+                    ]
+                    != after_by_id[
+                        unique_id
+                    ]
+                )
+            ]
+
+            self.assertEqual(
+                changed,
+                [
+                    self.TARGET,
+                ],
+            )
+
+            failed_tests = [
+                result
+                for result
+                in output["results"]
+                if (
+                    str(
+                        result.get(
+                            "unique_id",
+                            "",
+                        )
+                    ).startswith(
+                        "test."
+                    )
+                    and result.get(
+                        "status"
+                    )
+                    != "pass"
+                )
+            ]
+
+            self.assertEqual(
+                len(failed_tests),
+                1,
+            )
+
+            evidence = json.loads(
+                (
+                    evidence_dir
+                    / "fault-injection.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                evidence[
+                    "scenario_id"
+                ],
+                "quality_regression",
+            )
+
+            self.assertEqual(
+                evidence[
+                    "target_test"
+                ],
+                self.TARGET,
+            )
+
+            self.assertEqual(
+                evidence[
+                    "expected_effect"
+                ][
+                    "collector_quality_status"
+                ],
+                "FAIL",
+            )
+
+            self.assertEqual(
+                evidence[
+                    "expected_effect"
+                ][
+                    "collector_failed_tests"
+                ],
+                1,
+            )
+
+            self.assertEqual(
+                evidence[
+                    "expected_effect"
+                ][
+                    "collector_critical_failures"
+                ],
+                [
+                    self.TARGET,
+                ],
+            )
+
+            self.assertFalse(
+                evidence[
+                    "safety"
+                ][
+                    "source_file_mutated"
+                ]
+            )
+
+    def test_quality_regression_rejects_non_clean_baseline(
+        self,
+    ):
+        import json
+        import subprocess
+        import tempfile
+        from pathlib import Path
+        import sys
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+
+            source_file = (
+                root
+                / "run_results.json"
+            )
+
+            output_file = (
+                root
+                / "fault.json"
+            )
+
+            evidence_dir = (
+                root
+                / "evidence"
+            )
+
+            payload = (
+                self.baseline_payload()
+            )
+
+            payload[
+                "results"
+            ][15][
+                "status"
+            ] = "fail"
+
+            payload[
+                "results"
+            ][15][
+                "failures"
+            ] = 1
+
+            source_file.write_text(
+                json.dumps(
+                    payload,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(
+                        self.injector_path()
+                    ),
+                    "--scenario",
+                    "quality_regression",
+                    "--source",
+                    str(source_file),
+                    "--output",
+                    str(output_file),
+                    "--evidence-dir",
+                    str(evidence_dir),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(
+                completed.returncode,
+                0,
+            )
+
+            self.assertIn(
+                (
+                    "must begin with all "
+                    "governed dbt tests passing"
+                ),
+                completed.stderr,
+            )
+
+            self.assertFalse(
+                output_file.exists()
+            )
+
 
 
 if __name__ == "__main__":
