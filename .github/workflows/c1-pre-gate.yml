@@ -370,6 +370,310 @@ jobs:
           )
           PY
 
+      - name: Apply C1 false-positive safe proposal before manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "$C1_SCENARIO_ID" in
+            policy_false_positive)
+              ;;
+            *)
+              echo "No PRE-manifest safe proposal required for scenario: $C1_SCENARIO_ID"
+              exit 0
+              ;;
+          esac
+
+          PRE_MANIFEST_FAULT_ROOT="${THESIS_C1_EVIDENCE_ROOT}/pre-manifest-fault-injection"
+
+          mkdir -p \
+            "$PRE_MANIFEST_FAULT_ROOT"
+
+          python \
+            scripts/experiments/inject_fault_scenario.py \
+            --scenario \
+            policy_false_positive \
+            --repo-root \
+            "$GITHUB_WORKSPACE" \
+            --evidence-dir \
+            "$PRE_MANIFEST_FAULT_ROOT" \
+            > "${THESIS_C1_EVIDENCE_ROOT}/pre-manifest-fault-injector-stdout.json"
+
+          cat \
+            "${THESIS_C1_EVIDENCE_ROOT}/pre-manifest-fault-injector-stdout.json"
+
+          test -s \
+            "${PRE_MANIFEST_FAULT_ROOT}/fault-injection.json"
+
+          test -s \
+            "${PRE_MANIFEST_FAULT_ROOT}/fault-injection.patch"
+
+          python - \
+            "${PRE_MANIFEST_FAULT_ROOT}/fault-injection.json" \
+            "${THESIS_C1_EVIDENCE_ROOT}/policy-false-positive-ground-truth-validation.json" <<'PYFP'
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(
+              Path(sys.argv[1]).read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          ground = payload[
+              "ground_truth"
+          ]
+
+          collector = payload[
+              "expected_collector_effect"
+          ]
+
+          policy = payload[
+              "expected_policy_effect"
+          ]
+
+          checks = {
+              "scenario": (
+                  payload[
+                      "scenario_id"
+                  ]
+                  == "policy_false_positive"
+              ),
+              "target": (
+                  payload[
+                      "target_model"
+                  ]
+                  == "gold_customer_order_summary"
+              ),
+              "operation": (
+                  payload[
+                      "fault"
+                  ][
+                      "operation"
+                  ]
+                  == (
+                      "add_backward_compatible_"
+                      "nullable_internal_column"
+                  )
+              ),
+              "ground_truth_safe": (
+                  ground[
+                      "classification"
+                  ]
+                  == "SAFE"
+              ),
+              "ground_truth_allow": (
+                  ground[
+                      "expected_decision"
+                  ]
+                  == "ALLOW"
+              ),
+              "internal": (
+                  ground[
+                      "target_exposure"
+                  ]
+                  == "internal"
+              ),
+              "required_retained": (
+                  ground[
+                      "existing_required_columns_retained"
+                  ]
+                  is True
+              ),
+              "nullable": (
+                  ground[
+                      "new_column_nullable"
+                  ]
+                  is True
+              ),
+              "model_contract_aligned": (
+                  ground[
+                      "model_contract_aligned"
+                  ]
+                  is True
+              ),
+              "public_unchanged": (
+                  ground[
+                      "public_output_changed"
+                  ]
+                  is False
+              ),
+              "not_sensitive": (
+                  ground[
+                      "sensitive_field_added"
+                  ]
+                  is False
+              ),
+              "collector_expected_11": (
+                  collector[
+                      "expected_column_count"
+                  ]
+                  == 11
+              ),
+              "collector_actual_12": (
+                  collector[
+                      "actual_column_count"
+                  ]
+                  == 12
+              ),
+              "collector_missing_empty": (
+                  collector[
+                      "missing_columns"
+                  ]
+                  == []
+              ),
+              "collector_unexpected_exact": (
+                  collector[
+                      "unexpected_columns"
+                  ]
+                  == [
+                      "synthetic_optional_note"
+                  ]
+              ),
+              "collector_types_clean": (
+                  collector[
+                      "incompatible_type_changes"
+                  ]
+                  == []
+              ),
+              "expected_policy_deny": (
+                  policy[
+                      "decision"
+                  ]
+                  == "DENY"
+              ),
+              "expected_false_positive": (
+                  policy[
+                      "classification_if_observed"
+                  ]
+                  == "FALSE_POSITIVE"
+              ),
+          }
+
+          failed = [
+              name
+              for name, passed
+              in checks.items()
+              if not passed
+          ]
+
+          result = {
+              "status": (
+                  "PASS"
+                  if not failed
+                  else "FAIL"
+              ),
+              "condition": "C1",
+              "scenario_id": (
+                  "policy_false_positive"
+              ),
+              "ground_truth": {
+                  "classification": "SAFE",
+                  "expected_decision": "ALLOW",
+              },
+              "target_model": (
+                  "gold_customer_order_summary"
+              ),
+              "change": (
+                  "nullable additive "
+                  "internal column"
+              ),
+              "column": (
+                  "synthetic_optional_note"
+              ),
+              "model_contract_aligned": True,
+              "public_output_changed": False,
+              "sensitive_field_added": False,
+              "expected_policy_observation": {
+                  "decision": "DENY",
+                  "primary_policy_id": (
+                      "PAC-SCHEMA-001"
+                  ),
+                  "release_policy_id": (
+                      "PAC-RELEASE-001"
+                  ),
+              },
+              "failed_checks": failed,
+          }
+
+          Path(sys.argv[2]).write_text(
+              json.dumps(
+                  result,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+
+          print(
+              json.dumps(
+                  result,
+                  indent=2,
+                  sort_keys=True,
+              )
+          )
+
+          if failed:
+              raise SystemExit(
+                  f"Ground-truth checks failed: {failed}"
+              )
+          PYFP
+
+          python - \
+            "$GITHUB_WORKSPACE" <<'PYFPSCOPE'
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          repo = Path(
+              sys.argv[1]
+          )
+
+          expected = {
+              (
+                  "transformations/dbt/models/"
+                  "gold/internal/"
+                  "gold_customer_order_summary.sql"
+              ),
+              (
+                  "transformations/dbt/tests/"
+                  "gold_contract_columns.sql"
+              ),
+          }
+
+          actual = set(
+              subprocess.run(
+                  [
+                      "git",
+                      "-C",
+                      str(repo),
+                      "diff",
+                      "--name-only",
+                  ],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              ).stdout.splitlines()
+          )
+
+          print(
+              "Controlled modified files:",
+              sorted(actual),
+          )
+
+          if actual != expected:
+              raise SystemExit(
+                  "Unexpected PRE-manifest "
+                  f"modified scope: {sorted(actual)}"
+              )
+
+          print(
+              "PRE-manifest controlled scope: PASS"
+          )
+          PYFPSCOPE
+
       - name: Generate fresh dbt manifest
         shell: bash
         run: |
