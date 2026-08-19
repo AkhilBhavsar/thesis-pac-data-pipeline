@@ -1149,6 +1149,7 @@ def execute(
     if scenario not in {
         "baseline",
         "freshness_breach",
+        "quality_regression",
     }:
         raise RuntimeError(
             f"Unexpected scenario: {scenario}"

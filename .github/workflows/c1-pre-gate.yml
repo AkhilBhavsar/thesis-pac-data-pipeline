@@ -1037,7 +1037,7 @@ jobs:
           set -euo pipefail
 
           case "$C1_SCENARIO_ID" in
-            baseline|freshness_breach)
+            baseline|freshness_breach|quality_regression)
               ;;
             *)
               echo "Scenario is not authorized for C1 isolated execution: $C1_SCENARIO_ID"
@@ -1102,14 +1102,18 @@ jobs:
           test -s \
             "${EXECUTION_ROOT}/dbt/run_results.json"
 
-      - name: Prepare controlled C1 post-execution freshness evidence
+      - name: Prepare controlled C1 post-execution fault evidence
         shell: bash
         run: |
           set -euo pipefail
 
           FRESHNESS_SOURCE="${GITHUB_WORKSPACE}/data/bronze/generated/freshness_control.csv"
+          EXECUTION_RUN_RESULTS="${THESIS_C1_EVIDENCE_ROOT}/execution/dbt/run_results.json"
 
           test -s "$FRESHNESS_SOURCE"
+          test -s "$EXECUTION_RUN_RESULTS"
+
+          POST_RUN_RESULTS="$EXECUTION_RUN_RESULTS"
 
           sha256sum             "$FRESHNESS_SOURCE"             > "${THESIS_C1_EVIDENCE_ROOT}/freshness-source-sha256.txt"
 
@@ -1409,6 +1413,424 @@ jobs:
               )
           PYPOSTFAULT
               ;;
+            quality_regression)
+              POST_FRESHNESS_CONTROL="$FRESHNESS_SOURCE"
+
+              POST_FAULT_ROOT="${THESIS_C1_EVIDENCE_ROOT}/post-fault-injection"
+
+              POST_RUN_RESULTS="${POST_FAULT_ROOT}/run_results.json"
+
+              mkdir -p "$POST_FAULT_ROOT"
+
+              SOURCE_RUN_RESULTS_SHA_BEFORE="$(
+                sha256sum "$EXECUTION_RUN_RESULTS" |
+                awk '{print $1}'
+              )"
+
+              python \
+                scripts/experiments/inject_post_fault_scenario.py \
+                --scenario \
+                quality_regression \
+                --source \
+                "$EXECUTION_RUN_RESULTS" \
+                --output \
+                "$POST_RUN_RESULTS" \
+                --evidence-dir \
+                "$POST_FAULT_ROOT" \
+                > "${THESIS_C1_EVIDENCE_ROOT}/post-fault-injector-stdout.json"
+
+              cat \
+                "${THESIS_C1_EVIDENCE_ROOT}/post-fault-injector-stdout.json"
+
+              test -s \
+                "${POST_FAULT_ROOT}/fault-injection.json"
+
+              test -s \
+                "${POST_FAULT_ROOT}/fault-injection.patch"
+
+              test -s \
+                "$POST_RUN_RESULTS"
+
+              SOURCE_RUN_RESULTS_SHA_AFTER="$(
+                sha256sum "$EXECUTION_RUN_RESULTS" |
+                awk '{print $1}'
+              )"
+
+              test \
+                "$SOURCE_RUN_RESULTS_SHA_AFTER" \
+                = "$SOURCE_RUN_RESULTS_SHA_BEFORE"
+
+              python - <<'PYPOSTQUALITY'
+          import json
+          import os
+          from pathlib import Path
+
+          evidence_root = Path(
+              os.environ[
+                  "THESIS_C1_EVIDENCE_ROOT"
+              ]
+          )
+
+          original = (
+              evidence_root
+              / "execution"
+              / "dbt"
+              / "run_results.json"
+          )
+
+          fault_root = (
+              evidence_root
+              / "post-fault-injection"
+          )
+
+          injected = (
+              fault_root
+              / "run_results.json"
+          )
+
+          metadata = json.loads(
+              (
+                  fault_root
+                  / "fault-injection.json"
+              ).read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          before = json.loads(
+              original.read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          after = json.loads(
+              injected.read_text(
+                  encoding="utf-8"
+              )
+          )
+
+          target = (
+              "test.thesis_pac_pipeline."
+              "gold_financial_reconciliation"
+          )
+
+          before_by_id = {
+              item.get(
+                  "unique_id"
+              ): item
+              for item in before[
+                  "results"
+              ]
+          }
+
+          after_by_id = {
+              item.get(
+                  "unique_id"
+              ): item
+              for item in after[
+                  "results"
+              ]
+          }
+
+          before_models = [
+              item
+              for item
+              in before[
+                  "results"
+              ]
+              if str(
+                  item.get(
+                      "unique_id",
+                      "",
+                  )
+              ).startswith(
+                  "model."
+              )
+          ]
+
+          after_models = [
+              item
+              for item
+              in after[
+                  "results"
+              ]
+              if str(
+                  item.get(
+                      "unique_id",
+                      "",
+                  )
+              ).startswith(
+                  "model."
+              )
+          ]
+
+          before_tests = [
+              item
+              for item
+              in before[
+                  "results"
+              ]
+              if str(
+                  item.get(
+                      "unique_id",
+                      "",
+                  )
+              ).startswith(
+                  "test."
+              )
+          ]
+
+          after_tests = [
+              item
+              for item
+              in after[
+                  "results"
+              ]
+              if str(
+                  item.get(
+                      "unique_id",
+                      "",
+                  )
+              ).startswith(
+                  "test."
+              )
+          ]
+
+          failed_after = [
+              item
+              for item
+              in after_tests
+              if item.get(
+                  "status"
+              )
+              != "pass"
+          ]
+
+          changed = [
+              unique_id
+              for unique_id
+              in before_by_id
+              if (
+                  before_by_id[
+                      unique_id
+                  ]
+                  != after_by_id[
+                      unique_id
+                  ]
+              )
+          ]
+
+          checks = {
+              "scenario": (
+                  metadata[
+                      "scenario_id"
+                  ]
+                  == "quality_regression"
+              ),
+              "target": (
+                  metadata[
+                      "target_test"
+                  ]
+                  == target
+              ),
+              "models_before_15": (
+                  len(before_models)
+                  == 15
+              ),
+              "models_after_15": (
+                  len(after_models)
+                  == 15
+              ),
+              "tests_before_41": (
+                  len(before_tests)
+                  == 41
+              ),
+              "tests_after_41": (
+                  len(after_tests)
+                  == 41
+              ),
+              "baseline_all_pass": all(
+                  item.get(
+                      "status"
+                  )
+                  == "pass"
+                  for item in before_tests
+              ),
+              "one_failed_after": (
+                  len(failed_after)
+                  == 1
+              ),
+              "failed_target": (
+                  len(failed_after)
+                  == 1
+                  and failed_after[
+                      0
+                  ].get(
+                      "unique_id"
+                  )
+                  == target
+              ),
+              "target_pass_to_fail": (
+                  before_by_id[
+                      target
+                  ][
+                      "status"
+                  ]
+                  == "pass"
+                  and after_by_id[
+                      target
+                  ][
+                      "status"
+                  ]
+                  == "fail"
+              ),
+              "target_failures_zero_to_one": (
+                  before_by_id[
+                      target
+                  ][
+                      "failures"
+                  ]
+                  == 0
+                  and after_by_id[
+                      target
+                  ][
+                      "failures"
+                  ]
+                  == 1
+              ),
+              "only_target_changed": (
+                  changed == [
+                      target,
+                  ]
+              ),
+              "collector_quality_fail": (
+                  metadata[
+                      "expected_effect"
+                  ][
+                      "collector_quality_status"
+                  ]
+                  == "FAIL"
+              ),
+              "primary_policy": (
+                  metadata[
+                      "expected_effect"
+                  ][
+                      "primary_policy_id"
+                  ]
+                  == "PAC-QUALITY-001"
+              ),
+              "release_policy": (
+                  metadata[
+                      "expected_effect"
+                  ][
+                      "release_policy_id"
+                  ]
+                  == "PAC-RELEASE-001"
+              ),
+              "source_not_mutated": (
+                  metadata[
+                      "safety"
+                  ][
+                      "source_file_mutated"
+                  ]
+                  is False
+              ),
+          }
+
+          for name, passed in checks.items():
+              print(
+                  f"{name}: "
+                  f"{'PASS' if passed else 'FAIL'}"
+              )
+
+          failed = [
+              name
+              for name, passed
+              in checks.items()
+              if not passed
+          ]
+
+          validation = {
+              "status": (
+                  "PASS"
+                  if not failed
+                  else "FAIL"
+              ),
+              "condition": "C1",
+              "scenario_id": (
+                  "quality_regression"
+              ),
+              "target_test": target,
+              "model_results": (
+                  len(after_models)
+              ),
+              "total_tests": (
+                  len(after_tests)
+              ),
+              "failed_tests": (
+                  len(failed_after)
+              ),
+              "target_status_before": (
+                  before_by_id[
+                      target
+                  ][
+                      "status"
+                  ]
+              ),
+              "target_status_after": (
+                  after_by_id[
+                      target
+                  ][
+                      "status"
+                  ]
+              ),
+              "target_failures_before": (
+                  before_by_id[
+                      target
+                  ][
+                      "failures"
+                  ]
+              ),
+              "target_failures_after": (
+                  after_by_id[
+                      target
+                  ][
+                      "failures"
+                  ]
+              ),
+              "changed_result_ids": (
+                  changed
+              ),
+              "expected_collector_status": (
+                  "FAIL"
+              ),
+              "expected_policy_ids": [
+                  "PAC-QUALITY-001",
+                  "PAC-RELEASE-001",
+              ],
+              "failed_checks": failed,
+          }
+
+          (
+              evidence_root
+              / "post-fault-validation.json"
+          ).write_text(
+              json.dumps(
+                  validation,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+
+          if failed:
+              raise SystemExit(
+                  "POST quality fault "
+                  f"validation failed: {failed}"
+              )
+          PYPOSTQUALITY
+              ;;
             *)
               echo "Unsupported POST-execution scenario: $C1_SCENARIO_ID"
               exit 1
@@ -1416,9 +1838,11 @@ jobs:
           esac
 
           test -s "$POST_FRESHNESS_CONTROL"
+          test -s "$POST_RUN_RESULTS"
 
           {
             echo "THESIS_POST_FRESHNESS_CONTROL_PATH=${POST_FRESHNESS_CONTROL}"
+            echo "THESIS_POST_RUN_RESULTS_PATH=${POST_RUN_RESULTS}"
           } >> "$GITHUB_ENV"
 
       - name: Collect C1 post-execution evidence
@@ -1433,7 +1857,7 @@ jobs:
             --pre-evidence \
             "${THESIS_C1_EVIDENCE_ROOT}/pre-gate-evidence.json" \
             --run-results \
-            "${EXECUTION_ROOT}/dbt/run_results.json" \
+            "${THESIS_POST_RUN_RESULTS_PATH}" \
             --dagster-summary \
             "${EXECUTION_ROOT}/dagster-summary.json" \
             --canonical-comparison \
