@@ -342,95 +342,238 @@ def inject_policy_false_positive(
     repo_root: Path,
     evidence_dir: Path,
 ) -> dict:
-    target_file = (
+    contract_relative = (
+        CONTRACT_RELATIVE_PATH
+    )
+
+    model_relative = Path(
+        "transformations/dbt/models/"
+        "gold/internal/"
+        "gold_customer_order_summary.sql"
+    )
+
+    contract_file = (
         repo_root
-        / CONTRACT_RELATIVE_PATH
+        / contract_relative
     )
 
-    if not target_file.is_file():
+    model_file = (
+        repo_root
+        / model_relative
+    )
+
+    if not contract_file.is_file():
         raise RuntimeError(
-            "False-positive target does not exist: "
-            f"{target_file}"
+            "False-positive contract target "
+            "does not exist: "
+            f"{contract_file}"
         )
 
-    before_bytes = (
-        target_file.read_bytes()
-    )
-
-    before_text = before_bytes.decode(
-        "utf-8"
-    )
-
-    baseline_matches = before_text.count(
-        FALSE_POSITIVE_BASELINE_TUPLE
-    )
-
-    additive_matches = before_text.count(
-        FALSE_POSITIVE_ADDITIVE_TUPLE
-    )
-
-    if baseline_matches != 1:
+    if not model_file.is_file():
         raise RuntimeError(
-            "Expected exactly one false-positive "
-            "baseline terminal tuple; found "
-            f"{baseline_matches}."
+            "False-positive model target "
+            "does not exist: "
+            f"{model_file}"
         )
 
-    if additive_matches != 0:
-        raise RuntimeError(
-            "False-positive additive contract "
-            "column already appears injected."
-        )
-
-    replacement = (
-        FALSE_POSITIVE_BASELINE_TUPLE
-        + "\n"
-        + FALSE_POSITIVE_ADDITIVE_TUPLE
+    contract_before_bytes = (
+        contract_file.read_bytes()
     )
 
-    after_text = before_text.replace(
-        FALSE_POSITIVE_BASELINE_TUPLE,
-        replacement,
-        1,
+    model_before_bytes = (
+        model_file.read_bytes()
     )
 
-    if after_text == before_text:
-        raise RuntimeError(
-            "False-positive injection "
-            "produced no change."
+    contract_before = (
+        contract_before_bytes.decode(
+            "utf-8"
         )
+    )
+
+    model_before = (
+        model_before_bytes.decode(
+            "utf-8"
+        )
+    )
+
+    contract_baseline = (
+        "        ('{{ gold_internal_schema }}', "
+        "'gold_customer_order_summary', "
+        "11, 'average_order_value'),"
+    )
+
+    contract_additive = (
+        "        ('{{ gold_internal_schema }}', "
+        "'gold_customer_order_summary', "
+        "12, 'synthetic_optional_note'),"
+    )
+
+    model_baseline = (
+        "    ) as average_order_value\n"
+        "\n"
+        "from customer_totals as totals"
+    )
+
+    model_additive = (
+        "    ) as average_order_value,\n"
+        "\n"
+        "    cast(\n"
+        "        null as varchar\n"
+        "    ) as synthetic_optional_note\n"
+        "\n"
+        "from customer_totals as totals"
+    )
 
     if (
-        after_text.count(
-            FALSE_POSITIVE_ADDITIVE_TUPLE
+        contract_before.count(
+            contract_baseline
         )
         != 1
     ):
         raise RuntimeError(
-            "Expected exactly one injected "
-            "safe additive contract tuple."
+            "Expected exactly one false-positive "
+            "baseline contract tuple."
+        )
+
+    if (
+        contract_before.count(
+            contract_additive
+        )
+        != 0
+    ):
+        raise RuntimeError(
+            "False-positive additive change "
+            "already appears injected."
+        )
+
+    if (
+        model_before.count(
+            model_baseline
+        )
+        != 1
+    ):
+        raise RuntimeError(
+            "Expected exactly one false-positive "
+            "model projection anchor."
+        )
+
+    if (
+        "synthetic_optional_note"
+        in model_before
+    ):
+        raise RuntimeError(
+            "False-positive additive change "
+            "already appears injected."
+        )
+
+    contract_after = (
+        contract_before.replace(
+            contract_baseline,
+            (
+                contract_baseline
+                + "\n"
+                + contract_additive
+            ),
+            1,
+        )
+    )
+
+    model_after = (
+        model_before.replace(
+            model_baseline,
+            model_additive,
+            1,
+        )
+    )
+
+    if contract_after == contract_before:
+        raise RuntimeError(
+            "False-positive contract injection "
+            "produced no change."
+        )
+
+    if model_after == model_before:
+        raise RuntimeError(
+            "False-positive model injection "
+            "produced no change."
+        )
+
+    if (
+        contract_after.count(
+            contract_additive
+        )
+        != 1
+    ):
+        raise RuntimeError(
+            "Expected exactly one additive "
+            "contract column."
+        )
+
+    if (
+        model_after.count(
+            "synthetic_optional_note"
+        )
+        != 1
+    ):
+        raise RuntimeError(
+            "Expected exactly one additive "
+            "model projection."
         )
 
     atomic_write_text(
-        target_file,
-        after_text,
+        contract_file,
+        contract_after,
     )
 
-    after_bytes = (
-        target_file.read_bytes()
+    atomic_write_text(
+        model_file,
+        model_after,
     )
 
-    before_sha = sha256_bytes(
-        before_bytes
+    contract_after_bytes = (
+        contract_file.read_bytes()
     )
 
-    after_sha = sha256_bytes(
-        after_bytes
+    model_after_bytes = (
+        model_file.read_bytes()
     )
 
-    if before_sha == after_sha:
+    contract_sha_before = (
+        sha256_bytes(
+            contract_before_bytes
+        )
+    )
+
+    contract_sha_after = (
+        sha256_bytes(
+            contract_after_bytes
+        )
+    )
+
+    model_sha_before = (
+        sha256_bytes(
+            model_before_bytes
+        )
+    )
+
+    model_sha_after = (
+        sha256_bytes(
+            model_after_bytes
+        )
+    )
+
+    if (
+        contract_sha_before
+        == contract_sha_after
+    ):
         raise RuntimeError(
-            "False-positive fingerprints "
+            "False-positive contract fingerprint "
+            "did not change."
+        )
+
+    if model_sha_before == model_sha_after:
+        raise RuntimeError(
+            "False-positive model fingerprint "
             "did not change."
         )
 
@@ -439,24 +582,47 @@ def inject_policy_false_positive(
         exist_ok=True,
     )
 
-    patch = "".join(
+    contract_patch = "".join(
         difflib.unified_diff(
-            before_text.splitlines(
+            contract_before.splitlines(
                 keepends=True
             ),
-            after_text.splitlines(
+            contract_after.splitlines(
                 keepends=True
             ),
             fromfile=(
                 "a/"
                 + str(
-                    CONTRACT_RELATIVE_PATH
+                    contract_relative
                 )
             ),
             tofile=(
                 "b/"
                 + str(
-                    CONTRACT_RELATIVE_PATH
+                    contract_relative
+                )
+            ),
+        )
+    )
+
+    model_patch = "".join(
+        difflib.unified_diff(
+            model_before.splitlines(
+                keepends=True
+            ),
+            model_after.splitlines(
+                keepends=True
+            ),
+            fromfile=(
+                "a/"
+                + str(
+                    model_relative
+                )
+            ),
+            tofile=(
+                "b/"
+                + str(
+                    model_relative
                 )
             ),
         )
@@ -465,7 +631,10 @@ def inject_policy_false_positive(
     atomic_write_text(
         evidence_dir
         / "fault-injection.patch",
-        patch,
+        (
+            contract_patch
+            + model_patch
+        ),
     )
 
     payload = {
@@ -482,59 +651,83 @@ def inject_policy_false_positive(
         ),
         "condition": "C1",
         "scenario_id": (
-            FALSE_POSITIVE_SCENARIO
+            "policy_false_positive"
         ),
         "fault_class": (
-            "safe_additive_internal_gold_"
-            "contract_evolution"
+            "safe_backward_compatible_"
+            "additive_internal_schema_evolution"
         ),
         "injection_scope": (
             "ephemeral_worktree"
         ),
         "target_file": str(
-            CONTRACT_RELATIVE_PATH
+            contract_relative
         ),
+        "target_files": [
+            str(contract_relative),
+            str(model_relative),
+        ],
         "target_model": (
-            FALSE_POSITIVE_TARGET_MODEL
+            "gold_customer_order_summary"
         ),
         "fault": {
             "operation": (
-                "add_safe_optional_internal_"
-                "contract_column"
+                "add_backward_compatible_"
+                "nullable_internal_column"
             ),
             "column": (
-                FALSE_POSITIVE_COLUMN
+                "synthetic_optional_note"
             ),
-            "ordinal": (
-                FALSE_POSITIVE_ORDINAL
+            "ordinal": 12,
+            "expression": (
+                "cast(null as varchar)"
             ),
         },
         "ground_truth": {
             "classification": "SAFE",
             "expected_decision": "ALLOW",
+            "compatibility_rule": (
+                "nullable_additive_internal_"
+                "column_is_backward_compatible"
+            ),
             "change_type": (
-                "additive_optional_internal_"
-                "contract_column"
+                "additive_nullable_internal_"
+                "column"
             ),
             "target_exposure": "internal",
             "required_columns_removed": 0,
-            "incompatible_type_changes": 0,
+            "existing_column_types_changed": 0,
+            "existing_required_columns_retained": True,
+            "new_column_nullable": True,
+            "new_column_value_semantics": "NULL",
+            "model_contract_aligned": True,
             "public_output_changed": False,
             "sensitive_field_added": False,
-            "existing_required_contract_retained": True,
         },
         "file_sha256_before": (
-            before_sha
+            contract_sha_before
         ),
         "file_sha256_after": (
-            after_sha
+            contract_sha_after
+        ),
+        "contract_file_sha256_before": (
+            contract_sha_before
+        ),
+        "contract_file_sha256_after": (
+            contract_sha_after
+        ),
+        "model_file_sha256_before": (
+            model_sha_before
+        ),
+        "model_file_sha256_after": (
+            model_sha_after
         ),
         "expected_collector_effect": {
             "expected_column_count": 11,
             "actual_column_count": 12,
             "missing_columns": [],
             "unexpected_columns": [
-                FALSE_POSITIVE_COLUMN
+                "synthetic_optional_note"
             ],
             "incompatible_type_changes": [],
             "exposure": "internal",
@@ -571,6 +764,8 @@ def inject_policy_false_positive(
     )
 
     return payload
+
+
 
 
 

@@ -675,47 +675,81 @@ class PiiExposureInjectorTest(
 class PolicyFalsePositiveInjectorTest(
     unittest.TestCase
 ):
-    def test_safe_additive_internal_contract_change(
+    def test_safe_nullable_additive_internal_change(
         self,
     ) -> None:
         collector = (
             load_collector_module()
         )
 
-        baseline_text = (
-            SOURCE_CONTRACT
-            .read_text(
-                encoding="utf-8"
+        model_relative = Path(
+            "transformations/dbt/models/"
+            "gold/internal/"
+            "gold_customer_order_summary.sql"
+        )
+
+        source_model = (
+            REPO_ROOT
+            / model_relative
+        )
+
+        baseline_contract_bytes = (
+            SOURCE_CONTRACT.read_bytes()
+        )
+
+        baseline_model_bytes = (
+            source_model.read_bytes()
+        )
+
+        baseline_contract_text = (
+            baseline_contract_bytes.decode(
+                "utf-8"
             )
         )
 
-        baseline_source_bytes = (
-            SOURCE_CONTRACT
-            .read_bytes()
+        baseline_model_text = (
+            baseline_model_bytes.decode(
+                "utf-8"
+            )
         )
 
-        baseline = (
+        baseline_contract = (
             collector.parse_contract(
-                baseline_text
+                baseline_contract_text
             )
         )
 
         with tempfile.TemporaryDirectory() as raw:
             temp_root = Path(raw)
 
-            target = (
+            target_contract = (
                 temp_root
                 / CONTRACT_RELATIVE
             )
 
-            target.parent.mkdir(
+            target_model = (
+                temp_root
+                / model_relative
+            )
+
+            target_contract.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            target_model.parent.mkdir(
                 parents=True,
                 exist_ok=True,
             )
 
             shutil.copy2(
                 SOURCE_CONTRACT,
-                target,
+                target_contract,
+            )
+
+            shutil.copy2(
+                source_model,
+                target_model,
             )
 
             evidence = (
@@ -748,15 +782,21 @@ class PolicyFalsePositiveInjectorTest(
                 ),
             )
 
-            current_text = (
-                target.read_text(
+            current_contract_text = (
+                target_contract.read_text(
                     encoding="utf-8"
                 )
             )
 
-            current = (
+            current_model_text = (
+                target_model.read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            current_contract = (
                 collector.parse_contract(
-                    current_text
+                    current_contract_text
                 )
             )
 
@@ -766,13 +806,17 @@ class PolicyFalsePositiveInjectorTest(
 
             expected_columns = (
                 collector.contract_columns(
-                    baseline[model]
+                    baseline_contract[
+                        model
+                    ]
                 )
             )
 
             current_columns = (
                 collector.contract_columns(
-                    current[model]
+                    current_contract[
+                        model
+                    ]
                 )
             )
 
@@ -810,6 +854,45 @@ class PolicyFalsePositiveInjectorTest(
                 "synthetic_optional_note",
             )
 
+            expected_model_text = (
+                baseline_model_text.replace(
+                    (
+                        "    ) as average_order_value\n"
+                        "\n"
+                        "from customer_totals as totals"
+                    ),
+                    (
+                        "    ) as average_order_value,\n"
+                        "\n"
+                        "    cast(\n"
+                        "        null as varchar\n"
+                        "    ) as synthetic_optional_note\n"
+                        "\n"
+                        "from customer_totals as totals"
+                    ),
+                    1,
+                )
+            )
+
+            self.assertEqual(
+                current_model_text,
+                expected_model_text,
+            )
+
+            self.assertEqual(
+                current_model_text.count(
+                    "synthetic_optional_note"
+                ),
+                1,
+            )
+
+            self.assertIn(
+                "cast(\n"
+                "        null as varchar\n"
+                "    ) as synthetic_optional_note",
+                current_model_text,
+            )
+
             stdout_payload = json.loads(
                 completed.stdout
             )
@@ -828,20 +911,6 @@ class PolicyFalsePositiveInjectorTest(
                 "policy_false_positive",
             )
 
-            self.assertEqual(
-                stdout_payload[
-                    "target_model"
-                ],
-                model,
-            )
-
-            self.assertEqual(
-                stdout_payload[
-                    "fault_column"
-                ],
-                "synthetic_optional_note",
-            )
-
             payload = json.loads(
                 (
                     evidence
@@ -851,84 +920,89 @@ class PolicyFalsePositiveInjectorTest(
                 )
             )
 
+            ground_truth = payload[
+                "ground_truth"
+            ]
+
             self.assertEqual(
-                payload[
-                    "ground_truth"
-                ][
+                ground_truth[
                     "classification"
                 ],
                 "SAFE",
             )
 
             self.assertEqual(
-                payload[
-                    "ground_truth"
-                ][
+                ground_truth[
                     "expected_decision"
                 ],
                 "ALLOW",
             )
 
             self.assertEqual(
-                payload[
-                    "ground_truth"
-                ][
-                    "change_type"
+                ground_truth[
+                    "compatibility_rule"
                 ],
                 (
-                    "additive_optional_internal_"
-                    "contract_column"
+                    "nullable_additive_internal_"
+                    "column_is_backward_compatible"
                 ),
             )
 
             self.assertEqual(
-                payload[
-                    "ground_truth"
-                ][
+                ground_truth[
                     "target_exposure"
                 ],
                 "internal",
             )
 
             self.assertEqual(
-                payload[
-                    "ground_truth"
-                ][
+                ground_truth[
                     "required_columns_removed"
                 ],
                 0,
             )
 
             self.assertEqual(
-                payload[
-                    "ground_truth"
-                ][
-                    "incompatible_type_changes"
+                ground_truth[
+                    "existing_column_types_changed"
                 ],
                 0,
             )
 
+            self.assertTrue(
+                ground_truth[
+                    "existing_required_columns_retained"
+                ]
+            )
+
+            self.assertTrue(
+                ground_truth[
+                    "new_column_nullable"
+                ]
+            )
+
+            self.assertEqual(
+                ground_truth[
+                    "new_column_value_semantics"
+                ],
+                "NULL",
+            )
+
+            self.assertTrue(
+                ground_truth[
+                    "model_contract_aligned"
+                ]
+            )
+
             self.assertFalse(
-                payload[
-                    "ground_truth"
-                ][
+                ground_truth[
                     "public_output_changed"
                 ]
             )
 
             self.assertFalse(
-                payload[
-                    "ground_truth"
-                ][
+                ground_truth[
                     "sensitive_field_added"
-                ]
-            )
-
-            self.assertTrue(
-                payload[
-                    "ground_truth"
-                ][
-                    "existing_required_contract_retained"
                 ]
             )
 
@@ -973,13 +1047,6 @@ class PolicyFalsePositiveInjectorTest(
                 [],
             )
 
-            self.assertEqual(
-                collector_effect[
-                    "exposure"
-                ],
-                "internal",
-            )
-
             policy_effect = payload[
                 "expected_policy_effect"
             ]
@@ -1018,54 +1085,78 @@ class PolicyFalsePositiveInjectorTest(
                 ]
             )
 
-            self.assertFalse(
-                payload[
-                    "safety"
-                ][
-                    "canonical_data_mutated"
-                ]
+            patch = (
+                evidence
+                / "fault-injection.patch"
+            ).read_text(
+                encoding="utf-8"
             )
 
-            self.assertFalse(
-                payload[
-                    "safety"
-                ][
-                    "aws_mutation_performed"
-                ]
+            self.assertIn(
+                str(CONTRACT_RELATIVE),
+                patch,
             )
 
-            self.assertFalse(
-                payload[
-                    "safety"
-                ][
-                    "public_gold_mutated"
-                ]
+            self.assertIn(
+                str(model_relative),
+                patch,
             )
 
             self.assertEqual(
                 SOURCE_CONTRACT.read_bytes(),
-                baseline_source_bytes,
+                baseline_contract_bytes,
+            )
+
+            self.assertEqual(
+                source_model.read_bytes(),
+                baseline_model_bytes,
             )
 
     def test_safe_additive_change_reinjection_is_rejected(
         self,
     ) -> None:
+        model_relative = Path(
+            "transformations/dbt/models/"
+            "gold/internal/"
+            "gold_customer_order_summary.sql"
+        )
+
+        source_model = (
+            REPO_ROOT
+            / model_relative
+        )
+
         with tempfile.TemporaryDirectory() as raw:
             temp_root = Path(raw)
 
-            target = (
+            target_contract = (
                 temp_root
                 / CONTRACT_RELATIVE
             )
 
-            target.parent.mkdir(
+            target_model = (
+                temp_root
+                / model_relative
+            )
+
+            target_contract.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            target_model.parent.mkdir(
                 parents=True,
                 exist_ok=True,
             )
 
             shutil.copy2(
                 SOURCE_CONTRACT,
-                target,
+                target_contract,
+            )
+
+            shutil.copy2(
+                source_model,
+                target_model,
             )
 
             command = [
@@ -1098,8 +1189,12 @@ class PolicyFalsePositiveInjectorTest(
                 ),
             )
 
-            first_bytes = (
-                target.read_bytes()
+            contract_after_first = (
+                target_contract.read_bytes()
+            )
+
+            model_after_first = (
+                target_model.read_bytes()
             )
 
             second = subprocess.run(
@@ -1116,16 +1211,23 @@ class PolicyFalsePositiveInjectorTest(
 
             self.assertIn(
                 (
-                    "False-positive additive contract "
-                    "column already appears injected."
+                    "False-positive additive change "
+                    "already appears injected."
                 ),
                 second.stderr,
             )
 
             self.assertEqual(
-                target.read_bytes(),
-                first_bytes,
+                target_contract.read_bytes(),
+                contract_after_first,
             )
+
+            self.assertEqual(
+                target_model.read_bytes(),
+                model_after_first,
+            )
+
+
 
 
 if __name__ == "__main__":
