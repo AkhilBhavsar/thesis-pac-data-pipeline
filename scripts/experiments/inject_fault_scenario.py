@@ -60,6 +60,34 @@ TARGET_PATTERN = re.compile(
 )
 
 
+FALSE_POSITIVE_SCENARIO = (
+    "policy_false_positive"
+)
+
+FALSE_POSITIVE_TARGET_MODEL = (
+    "gold_customer_order_summary"
+)
+
+FALSE_POSITIVE_COLUMN = (
+    "synthetic_optional_note"
+)
+
+FALSE_POSITIVE_ORDINAL = 12
+
+FALSE_POSITIVE_BASELINE_TUPLE = (
+    "        ('{{ gold_internal_schema }}', "
+    "'gold_customer_order_summary', "
+    "11, 'average_order_value'),"
+)
+
+FALSE_POSITIVE_ADDITIVE_TUPLE = (
+    "        ('{{ gold_internal_schema }}', "
+    "'gold_customer_order_summary', "
+    "12, 'synthetic_optional_note'),"
+)
+
+
+
 def sha256_bytes(
     content: bytes,
 ) -> str:
@@ -296,6 +324,243 @@ def inject_schema_break(
             "automatic_remediation_permitted": (
                 False
             ),
+        },
+    }
+
+    write_json(
+        evidence_dir
+        / "fault-injection.json",
+        payload,
+    )
+
+    return payload
+
+
+
+def inject_policy_false_positive(
+    *,
+    repo_root: Path,
+    evidence_dir: Path,
+) -> dict:
+    target_file = (
+        repo_root
+        / CONTRACT_RELATIVE_PATH
+    )
+
+    if not target_file.is_file():
+        raise RuntimeError(
+            "False-positive target does not exist: "
+            f"{target_file}"
+        )
+
+    before_bytes = (
+        target_file.read_bytes()
+    )
+
+    before_text = before_bytes.decode(
+        "utf-8"
+    )
+
+    baseline_matches = before_text.count(
+        FALSE_POSITIVE_BASELINE_TUPLE
+    )
+
+    additive_matches = before_text.count(
+        FALSE_POSITIVE_ADDITIVE_TUPLE
+    )
+
+    if baseline_matches != 1:
+        raise RuntimeError(
+            "Expected exactly one false-positive "
+            "baseline terminal tuple; found "
+            f"{baseline_matches}."
+        )
+
+    if additive_matches != 0:
+        raise RuntimeError(
+            "False-positive additive contract "
+            "column already appears injected."
+        )
+
+    replacement = (
+        FALSE_POSITIVE_BASELINE_TUPLE
+        + "\n"
+        + FALSE_POSITIVE_ADDITIVE_TUPLE
+    )
+
+    after_text = before_text.replace(
+        FALSE_POSITIVE_BASELINE_TUPLE,
+        replacement,
+        1,
+    )
+
+    if after_text == before_text:
+        raise RuntimeError(
+            "False-positive injection "
+            "produced no change."
+        )
+
+    if (
+        after_text.count(
+            FALSE_POSITIVE_ADDITIVE_TUPLE
+        )
+        != 1
+    ):
+        raise RuntimeError(
+            "Expected exactly one injected "
+            "safe additive contract tuple."
+        )
+
+    atomic_write_text(
+        target_file,
+        after_text,
+    )
+
+    after_bytes = (
+        target_file.read_bytes()
+    )
+
+    before_sha = sha256_bytes(
+        before_bytes
+    )
+
+    after_sha = sha256_bytes(
+        after_bytes
+    )
+
+    if before_sha == after_sha:
+        raise RuntimeError(
+            "False-positive fingerprints "
+            "did not change."
+        )
+
+    evidence_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    patch = "".join(
+        difflib.unified_diff(
+            before_text.splitlines(
+                keepends=True
+            ),
+            after_text.splitlines(
+                keepends=True
+            ),
+            fromfile=(
+                "a/"
+                + str(
+                    CONTRACT_RELATIVE_PATH
+                )
+            ),
+            tofile=(
+                "b/"
+                + str(
+                    CONTRACT_RELATIVE_PATH
+                )
+            ),
+        )
+    )
+
+    atomic_write_text(
+        evidence_dir
+        / "fault-injection.patch",
+        patch,
+    )
+
+    payload = {
+        "schema_version": "1.0.0",
+        "recorded_at_utc": (
+            datetime.now(
+                timezone.utc
+            )
+            .isoformat()
+            .replace(
+                "+00:00",
+                "Z",
+            )
+        ),
+        "condition": "C1",
+        "scenario_id": (
+            FALSE_POSITIVE_SCENARIO
+        ),
+        "fault_class": (
+            "safe_additive_internal_gold_"
+            "contract_evolution"
+        ),
+        "injection_scope": (
+            "ephemeral_worktree"
+        ),
+        "target_file": str(
+            CONTRACT_RELATIVE_PATH
+        ),
+        "target_model": (
+            FALSE_POSITIVE_TARGET_MODEL
+        ),
+        "fault": {
+            "operation": (
+                "add_safe_optional_internal_"
+                "contract_column"
+            ),
+            "column": (
+                FALSE_POSITIVE_COLUMN
+            ),
+            "ordinal": (
+                FALSE_POSITIVE_ORDINAL
+            ),
+        },
+        "ground_truth": {
+            "classification": "SAFE",
+            "expected_decision": "ALLOW",
+            "change_type": (
+                "additive_optional_internal_"
+                "contract_column"
+            ),
+            "target_exposure": "internal",
+            "required_columns_removed": 0,
+            "incompatible_type_changes": 0,
+            "public_output_changed": False,
+            "sensitive_field_added": False,
+            "existing_required_contract_retained": True,
+        },
+        "file_sha256_before": (
+            before_sha
+        ),
+        "file_sha256_after": (
+            after_sha
+        ),
+        "expected_collector_effect": {
+            "expected_column_count": 11,
+            "actual_column_count": 12,
+            "missing_columns": [],
+            "unexpected_columns": [
+                FALSE_POSITIVE_COLUMN
+            ],
+            "incompatible_type_changes": [],
+            "exposure": "internal",
+        },
+        "expected_policy_effect": {
+            "primary_policy_id": (
+                "PAC-SCHEMA-001"
+            ),
+            "release_policy_id": (
+                "PAC-RELEASE-001"
+            ),
+            "evaluation_stage": "pre",
+            "decision": "DENY",
+            "pipeline_execution": False,
+            "promotion": "BLOCKED",
+            "classification_if_observed": (
+                "FALSE_POSITIVE"
+            ),
+            "blocked_safe_change": True,
+        },
+        "safety": {
+            "canonical_data_mutated": False,
+            "aws_mutation_performed": False,
+            "public_gold_mutated": False,
+            "self_healing_permitted": False,
+            "automatic_remediation_permitted": False,
         },
     }
 
@@ -557,6 +822,7 @@ def parse_args() -> argparse.Namespace:
         choices=[
             "schema_break",
             "pii_exposure",
+            "policy_false_positive",
         ],
     )
 
@@ -605,6 +871,17 @@ def main() -> int:
         ):
             payload = (
                 inject_pii_exposure(
+                    repo_root=repo_root,
+                    evidence_dir=(
+                        evidence_dir
+                    ),
+                )
+            )
+        elif args.scenario == (
+            "policy_false_positive"
+        ):
+            payload = (
+                inject_policy_false_positive(
                     repo_root=repo_root,
                     evidence_dir=(
                         evidence_dir
