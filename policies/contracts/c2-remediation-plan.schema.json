@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thesis-pac.local/contracts/c2-remediation-plan.schema.json",
+  "title": "C2 Bounded Remediation Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "condition",
+    "scenario_id",
+    "run_key",
+    "source_policy_decision_sha256",
+    "source_policy_decision",
+    "controls",
+    "plan",
+    "rationale"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "condition": {
+      "const": "C2"
+    },
+    "scenario_id": {
+      "enum": [
+        "schema_break",
+        "pii_exposure",
+        "freshness_breach",
+        "quality_regression",
+        "policy_false_positive"
+      ]
+    },
+    "run_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_policy_decision_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_policy_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluation_stage",
+        "decision",
+        "triggered_policy_ids",
+        "promotion_blocked"
+      ],
+      "properties": {
+        "evaluation_stage": {
+          "enum": [
+            "pre",
+            "post"
+          ]
+        },
+        "decision": {
+          "const": "DENY"
+        },
+        "triggered_policy_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^PAC-[A-Z]+-[0-9]{3}$"
+          }
+        },
+        "promotion_blocked": {
+          "const": true
+        }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_as_code_required",
+        "self_healing_permitted",
+        "automatic_remediation_permitted"
+      ],
+      "properties": {
+        "policy_as_code_required": {
+          "const": true
+        },
+        "self_healing_permitted": {
+          "const": true
+        },
+        "automatic_remediation_permitted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "primary_action",
+        "fallback_action",
+        "max_attempts",
+        "timeout_seconds",
+        "target_scope",
+        "verification",
+        "canonical_mutation_before_verification"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "automatic",
+            "manual"
+          ]
+        },
+        "primary_action": {
+          "enum": [
+            "retry",
+            "rollback",
+            "quarantine",
+            "redact_republish",
+            "stop_promotion",
+            "manual_review"
+          ]
+        },
+        "fallback_action": {
+          "enum": [
+            "quarantine",
+            "stop_promotion",
+            "manual_review"
+          ]
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 900
+        },
+        "target_scope": {
+          "enum": [
+            "isolated_release_candidate",
+            "isolated_public_candidate",
+            "isolated_output",
+            "release_state"
+          ]
+        },
+        "verification": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "schema_contract",
+              "privacy",
+              "freshness",
+              "quality",
+              "runtime",
+              "release_policy",
+              "manual_policy_review"
+            ]
+          }
+        },
+        "canonical_mutation_before_verification": {
+          "const": false
+        }
+      }
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "controls": {
+            "properties": {
+              "automatic_remediation_permitted": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "properties": {
+              "mode": {
+                "const": "automatic"
+              },
+              "max_attempts": {
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "controls": {
+            "properties": {
+              "automatic_remediation_permitted": {
+                "const": false
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "plan": {
+            "properties": {
+              "mode": {
+                "const": "manual"
+              },
+              "max_attempts": {
+                "const": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
