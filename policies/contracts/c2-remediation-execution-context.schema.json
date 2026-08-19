@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "relativePath": {
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          {
+            "pattern": "^/"
+          },
+          {
+            "pattern": "(^|/)\\.\\.(/|$)"
+          }
+        ]
+      },
+      "type": "string"
+    }
+  },
+  "$id": "https://thesis-pac.local/contracts/c2-remediation-execution-context.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action_context": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "const": "rollback"
+            },
+            "target_relative_path": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "verified_source_relative_path": {
+              "$ref": "#/$defs/relativePath"
+            }
+          },
+          "required": [
+            "action",
+            "target_relative_path",
+            "verified_source_relative_path"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "const": "redact_republish"
+            },
+            "candidate_relative_path": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "sanitized_source_relative_path": {
+              "$ref": "#/$defs/relativePath"
+            }
+          },
+          "required": [
+            "action",
+            "candidate_relative_path",
+            "sanitized_source_relative_path"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "const": "retry"
+            },
+            "runner_profile": {
+              "const": "c2_isolated_pipeline"
+            }
+          },
+          "required": [
+            "action",
+            "runner_profile"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "const": "quarantine"
+            },
+            "quarantine_relative_path": {
+              "$ref": "#/$defs/relativePath"
+            },
+            "rejected_output_relative_path": {
+              "$ref": "#/$defs/relativePath"
+            }
+          },
+          "required": [
+            "action",
+            "rejected_output_relative_path",
+            "quarantine_relative_path"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "enum": [
+                "manual_review",
+                "stop_promotion"
+              ]
+            },
+            "reason": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "action",
+            "reason"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "condition": {
+      "const": "C2"
+    },
+    "remediation_plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "run_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "scenario_id": {
+      "enum": [
+        "schema_break",
+        "pii_exposure",
+        "freshness_breach",
+        "quality_regression",
+        "policy_false_positive"
+      ]
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "workspace": {
+      "additionalProperties": false,
+      "properties": {
+        "canonical_access_permitted": {
+          "const": false
+        },
+        "isolated": {
+          "const": true
+        },
+        "root": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "root",
+        "isolated",
+        "canonical_access_permitted"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "condition",
+    "scenario_id",
+    "run_key",
+    "remediation_plan_sha256",
+    "workspace",
+    "action_context"
+  ],
+  "title": "C2 Remediation Execution Context",
+  "type": "object"
+}
