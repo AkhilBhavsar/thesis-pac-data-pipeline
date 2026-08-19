@@ -87,6 +87,9 @@ class C2RemediationPlannerTest(
         return {
             "schema_version": "1.0.0",
             "condition": "C2",
+            "recorded_at_utc": (
+                "2026-08-19T18:00:00Z"
+            ),
             "run_key": (
                 "c2-planner-test-"
                 + scenario_id
@@ -233,6 +236,39 @@ class C2RemediationPlannerTest(
                 "promotion_blocked",
             },
         )
+
+    def test_fault_detection_timestamp_is_preserved(
+        self,
+    ):
+        payload = self.build(
+            "freshness_breach"
+        )
+
+        self.assertEqual(
+            payload[
+                "fault_detected_at_utc"
+            ],
+            "2026-08-19T18:00:00Z",
+        )
+
+    def test_rejects_missing_detection_timestamp(
+        self,
+    ):
+        decision = self.make_decision(
+            "freshness_breach"
+        )
+
+        decision.pop(
+            "recorded_at_utc"
+        )
+
+        with self.assertRaises(
+            PlannerError
+        ):
+            validate_source_decision(
+                decision,
+                self.catalog,
+            )
 
     def test_source_sha_is_preserved(
         self,

@@ -390,6 +390,23 @@ def validate_source_decision(
             "a non-empty run_key."
         )
 
+    recorded_at_utc = decision.get(
+        "recorded_at_utc"
+    )
+
+    if (
+        not isinstance(
+            recorded_at_utc,
+            str,
+        )
+        or not recorded_at_utc.strip()
+    ):
+        raise PlannerError(
+            "Policy decision requires "
+            "recorded_at_utc for recovery "
+            "measurement."
+        )
+
     scenario_id = decision.get(
         "scenario_id"
     )
@@ -559,6 +576,9 @@ def build_remediation_plan(
         "scenario_id": scenario_id,
         "run_key": decision[
             "run_key"
+        ],
+        "fault_detected_at_utc": decision[
+            "recorded_at_utc"
         ],
         "source_policy_decision_sha256": (
             decision_sha256

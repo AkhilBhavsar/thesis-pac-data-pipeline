@@ -72,6 +72,7 @@ class C2RemediationContractsTest(unittest.TestCase):
             "condition": "C2",
             "scenario_id": scenario_id,
             "run_key": "test_c2_contract",
+            "fault_detected_at_utc": "2026-08-19T18:00:00Z",
             "source_policy_decision_sha256": "a" * 64,
             "source_policy_decision": {
                 "evaluation_stage": scenario[
@@ -256,6 +257,74 @@ class C2RemediationContractsTest(unittest.TestCase):
         }
 
         self.result_validator.validate(payload)
+
+    def test_pending_verification_result_is_valid(self):
+        payload = {
+            "schema_version": "1.0.0",
+            "condition": "C2",
+            "scenario_id": "freshness_breach",
+            "run_key": "test_c2_pending",
+            "source_remediation_plan_sha256": "d" * 64,
+            "mode": "automatic",
+            "action": "retry",
+            "attempt_count": 1,
+            "execution_status": "SUCCEEDED",
+            "verification": {
+                "required": True,
+                "status": "NOT_RUN",
+                "evidence_sha256": None,
+            },
+            "terminal_state": "PENDING_VERIFICATION",
+            "fault_detected_at_utc": "2026-08-19T18:00:00Z",
+            "remediation_started_at_utc": "2026-08-19T18:00:01Z",
+            "remediation_completed_at_utc": "2026-08-19T18:00:02Z",
+            "action_duration_ms": 1000,
+            "recovery_time_ms": None,
+            "promotion_recheck_required": True,
+            "canonical_mutation_performed": False,
+            "self_healing_performed": False,
+            "automatic_remediation_performed": True,
+        }
+
+        self.result_validator.validate(
+            payload
+        )
+
+    def test_pending_verification_cannot_claim_self_healing(self):
+        payload = {
+            "schema_version": "1.0.0",
+            "condition": "C2",
+            "scenario_id": "quality_regression",
+            "run_key": "test_c2_pending",
+            "source_remediation_plan_sha256": "d" * 64,
+            "mode": "automatic",
+            "action": "rollback",
+            "attempt_count": 1,
+            "execution_status": "SUCCEEDED",
+            "verification": {
+                "required": True,
+                "status": "NOT_RUN",
+                "evidence_sha256": None,
+            },
+            "terminal_state": "PENDING_VERIFICATION",
+            "fault_detected_at_utc": "2026-08-19T18:00:00Z",
+            "remediation_started_at_utc": "2026-08-19T18:00:01Z",
+            "remediation_completed_at_utc": "2026-08-19T18:00:02Z",
+            "action_duration_ms": 1000,
+            "recovery_time_ms": 2000,
+            "promotion_recheck_required": True,
+            "canonical_mutation_performed": False,
+            "self_healing_performed": True,
+            "automatic_remediation_performed": True,
+        }
+
+        self.assertTrue(
+            list(
+                self.result_validator.iter_errors(
+                    payload
+                )
+            )
+        )
 
     def test_unverified_recovery_is_rejected(self):
         payload = {
