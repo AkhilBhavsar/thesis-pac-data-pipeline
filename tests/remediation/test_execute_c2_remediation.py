@@ -140,7 +140,9 @@ class C2RemediationExecutorTest(unittest.TestCase):
                 plan_sha
             ),
             "workspace": {
-                "root": "isolated",
+                "root": str(
+                    self.workspace.resolve()
+                ),
                 "isolated": True,
                 "canonical_access_permitted": False,
             },
@@ -571,6 +573,47 @@ class C2RemediationExecutorTest(unittest.TestCase):
                         ),
                     },
                 ),
+                workspace_root=self.workspace,
+                plan_sha256="1" * 64,
+            )
+
+    def test_runtime_workspace_must_match_context(self):
+        plan = self.plan(
+            scenario="schema_break",
+            action="rollback",
+        )
+
+        context = self.context(
+            scenario="schema_break",
+            plan_sha="1" * 64,
+            action_context={
+                "action": "rollback",
+                "target_relative_path": (
+                    "candidate/a"
+                ),
+                "verified_source_relative_path": (
+                    "verified/a"
+                ),
+            },
+        )
+
+        context[
+            "workspace"
+        ][
+            "root"
+        ] = str(
+            (
+                self.workspace
+                / "different-root"
+            ).resolve()
+        )
+
+        with self.assertRaises(
+            ExecutorError
+        ):
+            execute_plan(
+                plan=plan,
+                context=context,
                 workspace_root=self.workspace,
                 plan_sha256="1" * 64,
             )

@@ -170,6 +170,7 @@ def verify_identity(
     plan: dict[str, Any],
     context: dict[str, Any],
     plan_sha256: str,
+    workspace_root: Path,
 ) -> None:
     if plan.get(
         "condition"
@@ -228,6 +229,35 @@ def verify_identity(
         raise ExecutorError(
             "Canonical access must remain "
             "forbidden."
+        )
+
+    declared_root = workspace.get(
+        "root"
+    )
+
+    if (
+        not isinstance(
+            declared_root,
+            str,
+        )
+        or not declared_root.strip()
+    ):
+        raise ExecutorError(
+            "Execution context requires "
+            "a workspace root."
+        )
+
+    if (
+        Path(
+            declared_root
+        )
+        .expanduser()
+        .resolve()
+        != workspace_root.resolve()
+    ):
+        raise ExecutorError(
+            "Runtime workspace does not "
+            "match the execution context."
         )
 
     planned_action = plan[
@@ -647,6 +677,7 @@ def execute_plan(
         plan=plan,
         context=context,
         plan_sha256=plan_sha256,
+        workspace_root=workspace_root,
     )
 
     action = plan[
