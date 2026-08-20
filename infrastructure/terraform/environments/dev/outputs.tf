@@ -142,3 +142,13 @@ output "github_actions_c1_subject" {
   description = "Exact immutable GitHub OIDC subject trusted by the C1 role."
   value       = module.github_actions_c1.github_subject
 }
+
+output "c2_quarantine_lambda_name" {
+  description = "C2 bounded-remediation quarantine Lambda function name."
+  value       = aws_lambda_function.c2_quarantine.function_name
+}
+
+output "c2_quarantine_lambda_arn" {
+  description = "ARN of the C2 bounded-remediation quarantine Lambda function."
+  value       = aws_lambda_function.c2_quarantine.arn
+}

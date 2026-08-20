@@ -123,4 +123,20 @@ data "aws_iam_policy_document" "lambda_runtime" {
       var.athena_workgroup_arn
     ]
   }
+
+  statement {
+    sid    = "ReadDeleteC2ExperimentObjects"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:DeleteObject"
+    ]
+
+    resources = [
+      "${var.data_lake_bucket_arn}/experiments/c2/*"
+    ]
+  }
+
 }
