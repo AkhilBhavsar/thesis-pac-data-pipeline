@@ -27,6 +27,7 @@ RetryRunner = Callable[
     [
         dict[str, Any],
         dict[str, Any],
+        int,
     ],
     bool,
 ]
@@ -556,28 +557,74 @@ def execute_retry(
             "has not been wired."
         )
 
-    success = retry_runner(
-        plan,
-        context,
-    )
+    maximum_attempts = plan[
+        "plan"
+    ][
+        "max_attempts"
+    ]
 
-    if success is not True:
+    if (
+        not isinstance(
+            maximum_attempts,
+            int,
+        )
+        or isinstance(
+            maximum_attempts,
+            bool,
+        )
+        or maximum_attempts < 1
+    ):
         raise ExecutorError(
-            "C2 isolated retry runner "
-            "reported failure."
+            "Retry plan has invalid "
+            "bounded attempts."
         )
 
-    return {
-        "operation": (
-            "invoke_allowlisted_"
-            "c2_isolated_pipeline"
-        ),
-        "runner_profile": (
-            runner_profile
-        ),
-        "runner_reported_success": True,
-    }
+    attempts = []
 
+    for attempt_number in range(
+        1,
+        maximum_attempts + 1,
+    ):
+        success = retry_runner(
+            plan,
+            context,
+            attempt_number,
+        )
+
+        attempts.append(
+            {
+                "attempt_number": (
+                    attempt_number
+                ),
+                "success": (
+                    success is True
+                ),
+            }
+        )
+
+        if success is True:
+            return {
+                "operation": (
+                    "invoke_allowlisted_"
+                    "c2_isolated_pipeline"
+                ),
+                "runner_profile": (
+                    runner_profile
+                ),
+                "runner_reported_success": True,
+                "attempt_count": (
+                    attempt_number
+                ),
+                "maximum_attempts": (
+                    maximum_attempts
+                ),
+                "attempts": attempts,
+            }
+
+    raise ExecutorError(
+        "C2 isolated retry exhausted "
+        f"{maximum_attempts} bounded attempts."
+    )
 
 def execute_manual_control(
     *,
@@ -809,7 +856,12 @@ def execute_plan(
         started_at=started_at,
         completed_at=completed_at,
         duration_ms=duration_ms,
-        attempt_count=1,
+        attempt_count=int(
+            details.get(
+                "attempt_count",
+                1,
+            )
+        ),
         execution_status="SUCCEEDED",
         terminal_state=(
             "PENDING_VERIFICATION"
@@ -967,13 +1019,15 @@ def main() -> int:
             "primary_action"
         ]
 
+        retry_runner = None
+
         if action == "retry":
-            raise ExecutorError(
-                "CLI retry execution is not "
-                "wired at C2.3C; use the "
-                "allow-listed retry adapter "
-                "in the later integration "
-                "checkpoint."
+            from scripts.remediation.run_c2_isolated_retry import (
+                c2_isolated_retry_runner,
+            )
+
+            retry_runner = (
+                c2_isolated_retry_runner
             )
 
         result, details = execute_plan(
@@ -983,6 +1037,9 @@ def main() -> int:
                 args.workspace_root
             ),
             plan_sha256=plan_sha,
+            retry_runner=(
+                retry_runner
+            ),
         )
 
         validate_document(

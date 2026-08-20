@@ -381,7 +381,11 @@ class C2RemediationExecutorTest(unittest.TestCase):
     def test_retry_uses_allowlisted_injected_runner(self):
         called = []
 
-        def runner(plan, context):
+        def runner(
+            plan,
+            context,
+            attempt_number,
+        ):
             called.append(
                 (
                     plan["scenario_id"],
@@ -390,6 +394,7 @@ class C2RemediationExecutorTest(unittest.TestCase):
                     ][
                         "runner_profile"
                     ],
+                    attempt_number,
                 )
             )
 
@@ -426,6 +431,7 @@ class C2RemediationExecutorTest(unittest.TestCase):
                 (
                     "freshness_breach",
                     "c2_isolated_pipeline",
+                    1,
                 )
             ],
         )
@@ -440,6 +446,111 @@ class C2RemediationExecutorTest(unittest.TestCase):
                 "runner_reported_success"
             ],
             True,
+        )
+
+    def test_retry_can_succeed_on_second_bounded_attempt(self):
+        calls = []
+
+        def runner(
+            plan,
+            context,
+            attempt_number,
+        ):
+            calls.append(
+                attempt_number
+            )
+
+            return (
+                attempt_number == 2
+            )
+
+        plan = self.plan(
+            scenario="freshness_breach",
+            action="retry",
+            attempts=2,
+        )
+
+        result, details = execute_plan(
+            plan=plan,
+            context=self.context(
+                scenario="freshness_breach",
+                plan_sha="9" * 64,
+                action_context={
+                    "action": "retry",
+                    "runner_profile": (
+                        "c2_isolated_pipeline"
+                    ),
+                },
+            ),
+            workspace_root=self.workspace,
+            plan_sha256="9" * 64,
+            retry_runner=runner,
+        )
+
+        self.validate_result(result)
+
+        self.assertEqual(
+            calls,
+            [1, 2],
+        )
+
+        self.assertEqual(
+            result[
+                "attempt_count"
+            ],
+            2,
+        )
+
+        self.assertEqual(
+            details[
+                "attempt_count"
+            ],
+            2,
+        )
+
+    def test_retry_exhausts_exact_bounded_attempts(self):
+        calls = []
+
+        def runner(
+            plan,
+            context,
+            attempt_number,
+        ):
+            calls.append(
+                attempt_number
+            )
+
+            return False
+
+        plan = self.plan(
+            scenario="freshness_breach",
+            action="retry",
+            attempts=2,
+        )
+
+        with self.assertRaises(
+            ExecutorError
+        ):
+            execute_plan(
+                plan=plan,
+                context=self.context(
+                    scenario="freshness_breach",
+                    plan_sha="8" * 64,
+                    action_context={
+                        "action": "retry",
+                        "runner_profile": (
+                            "c2_isolated_pipeline"
+                        ),
+                    },
+                ),
+                workspace_root=self.workspace,
+                plan_sha256="8" * 64,
+                retry_runner=runner,
+            )
+
+        self.assertEqual(
+            calls,
+            [1, 2],
         )
 
     def test_retry_without_adapter_fails_closed(self):
