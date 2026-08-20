@@ -21,9 +21,33 @@ QUARANTINE_PREFIX = "quarantine/objects/"
 
 TERMINAL_STATE = "QUARANTINED"
 
+OWNERSHIP_METADATA_KEY = (
+    "thesis-c2-event-id"
+)
+
 
 class QuarantineRuntimeError(RuntimeError):
     pass
+
+
+class QuarantinePersistenceError(
+    QuarantineRuntimeError
+):
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        query_id: str,
+        state: str,
+        compensation_safe: bool,
+    ) -> None:
+        super().__init__(message)
+        self.query_id = query_id
+        self.state = state
+        self.compensation_safe = (
+            compensation_safe
+        )
 
 
 def utc_now() -> str:
@@ -375,42 +399,79 @@ def build_insert_sql(
     )
 
 
-def copy_and_remove_source(
+def is_missing_object_error(
+    error: Exception,
+) -> bool:
+    response = getattr(
+        error,
+        "response",
+        {},
+    )
+
+    code = str(
+        response.get(
+            "Error",
+            {},
+        ).get(
+            "Code",
+            "",
+        )
+    )
+
+    http_status = response.get(
+        "ResponseMetadata",
+        {},
+    ).get(
+        "HTTPStatusCode"
+    )
+
+    return (
+        code in {
+            "404",
+            "NoSuchKey",
+            "NotFound",
+        }
+        or http_status == 404
+    )
+
+
+def head_object_or_none(
     *,
     s3_client: Any,
     bucket: str,
-    source_key: str,
-    target_key: str,
-) -> dict[str, Any]:
-    before = s3_client.head_object(
-        Bucket=bucket,
-        Key=source_key,
-    )
+    key: str,
+) -> dict[str, Any] | None:
+    try:
+        return s3_client.head_object(
+            Bucket=bucket,
+            Key=key,
+        )
+    except Exception as error:
+        if is_missing_object_error(
+            error
+        ):
+            return None
 
-    s3_client.copy_object(
-        Bucket=bucket,
-        Key=target_key,
-        CopySource={
-            "Bucket": bucket,
-            "Key": source_key,
-        },
-    )
+        raise QuarantineRuntimeError(
+            "Unable to inspect S3 quarantine state."
+        ) from error
 
-    after = s3_client.head_object(
-        Bucket=bucket,
-        Key=target_key,
-    )
 
+def validate_copy_fingerprint(
+    *,
+    source: dict[str, Any],
+    target: dict[str, Any],
+) -> None:
     if (
-        before.get("ContentLength")
-        != after.get("ContentLength")
+        source.get("ContentLength")
+        != target.get("ContentLength")
     ):
         raise QuarantineRuntimeError(
             "Quarantine copy size validation failed."
         )
 
-    source_etag = before.get("ETag")
-    target_etag = after.get("ETag")
+    source_etag = source.get("ETag")
+    target_etag = target.get("ETag")
 
     if (
         source_etag is not None
@@ -421,18 +482,270 @@ def copy_and_remove_source(
             "Quarantine copy ETag validation failed."
         )
 
-    s3_client.delete_object(
-        Bucket=bucket,
-        Key=source_key,
+
+def object_timestamp(
+    *,
+    target: dict[str, Any],
+    override: str | None,
+) -> str:
+    if override is not None:
+        sql_timestamp(override)
+        return override
+
+    last_modified = target.get(
+        "LastModified"
     )
 
-    return {
-        "content_length": after.get(
-            "ContentLength"
-        ),
-        "etag": target_etag,
-        "source_removed": True,
+    if isinstance(
+        last_modified,
+        datetime,
+    ):
+        if last_modified.tzinfo is None:
+            last_modified = (
+                last_modified.replace(
+                    tzinfo=timezone.utc
+                )
+            )
+
+        return (
+            last_modified
+            .astimezone(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+
+    raise QuarantineRuntimeError(
+        "Quarantine destination has no stable "
+        "LastModified timestamp."
+    )
+
+
+def object_identity(
+    target: dict[str, Any],
+) -> str:
+    version_id = target.get(
+        "VersionId"
+    )
+
+    if version_id:
+        return f"version:{version_id}"
+
+    last_modified = target.get(
+        "LastModified"
+    )
+
+    etag = target.get(
+        "ETag",
+        "",
+    )
+
+    if last_modified and etag:
+        return (
+            f"last-modified:{last_modified}|"
+            f"etag:{etag}"
+        )
+
+    raise QuarantineRuntimeError(
+        "Quarantine destination has no stable "
+        "object identity."
+    )
+
+
+def prepare_destination(
+    *,
+    s3_client: Any,
+    bucket: str,
+    source_key: str,
+    target_key: str,
+    expected_event_id: str,
+) -> dict[str, Any]:
+    source = head_object_or_none(
+        s3_client=s3_client,
+        bucket=bucket,
+        key=source_key,
+    )
+
+    target = head_object_or_none(
+        s3_client=s3_client,
+        bucket=bucket,
+        key=target_key,
+    )
+
+    if target is not None:
+        owner = target.get(
+            "Metadata",
+            {},
+        ).get(
+            OWNERSHIP_METADATA_KEY
+        )
+
+        if owner != expected_event_id:
+            raise QuarantineRuntimeError(
+                "Quarantine destination already exists "
+                "without matching C2 ownership."
+            )
+
+        if source is not None:
+            validate_copy_fingerprint(
+                source=source,
+                target=target,
+            )
+
+        return {
+            "source": source,
+            "target": target,
+            "destination_created": False,
+            "resumed_owned_destination": True,
+        }
+
+    if source is None:
+        raise QuarantineRuntimeError(
+            "Rejected source object does not exist "
+            "and no owned quarantine copy was found."
+        )
+
+    metadata = dict(
+        source.get(
+            "Metadata",
+            {},
+        )
+    )
+
+    metadata[
+        OWNERSHIP_METADATA_KEY
+    ] = expected_event_id
+
+    copy_arguments: dict[str, Any] = {
+        "Bucket": bucket,
+        "Key": target_key,
+        "CopySource": {
+            "Bucket": bucket,
+            "Key": source_key,
+        },
+        "MetadataDirective": "REPLACE",
+        "Metadata": metadata,
     }
+
+    for field in (
+        "CacheControl",
+        "ContentDisposition",
+        "ContentEncoding",
+        "ContentLanguage",
+        "ContentType",
+        "Expires",
+    ):
+        if source.get(field) is not None:
+            copy_arguments[field] = source[field]
+
+    s3_client.copy_object(
+        **copy_arguments
+    )
+
+    target = head_object_or_none(
+        s3_client=s3_client,
+        bucket=bucket,
+        key=target_key,
+    )
+
+    if target is None:
+        raise QuarantineRuntimeError(
+            "Quarantine copy was not materialized."
+        )
+
+    validate_copy_fingerprint(
+        source=source,
+        target=target,
+    )
+
+    if target.get(
+        "Metadata",
+        {},
+    ).get(
+        OWNERSHIP_METADATA_KEY
+    ) != expected_event_id:
+        raise QuarantineRuntimeError(
+            "Quarantine copy ownership validation failed."
+        )
+
+    return {
+        "source": source,
+        "target": target,
+        "destination_created": True,
+        "resumed_owned_destination": False,
+    }
+
+
+def remove_source(
+    *,
+    s3_client: Any,
+    bucket: str,
+    source_key: str,
+) -> None:
+    try:
+        s3_client.delete_object(
+            Bucket=bucket,
+            Key=source_key,
+        )
+    except Exception as error:
+        raise QuarantineRuntimeError(
+            "Quarantine event was persisted but "
+            "source removal failed."
+        ) from error
+
+    if head_object_or_none(
+        s3_client=s3_client,
+        bucket=bucket,
+        key=source_key,
+    ) is not None:
+        raise QuarantineRuntimeError(
+            "Quarantine event was persisted but "
+            "the source object remains current."
+        )
+
+
+def compensate_destination(
+    *,
+    s3_client: Any,
+    bucket: str,
+    target_key: str,
+) -> None:
+    try:
+        s3_client.delete_object(
+            Bucket=bucket,
+            Key=target_key,
+        )
+    except Exception as error:
+        raise QuarantineRuntimeError(
+            "Athena persistence failed and "
+            "quarantine-copy compensation failed; "
+            "the source remains protected."
+        ) from error
+
+    if head_object_or_none(
+        s3_client=s3_client,
+        bucket=bucket,
+        key=target_key,
+    ) is not None:
+        raise QuarantineRuntimeError(
+            "Athena persistence failed and the "
+            "compensating quarantine-copy deletion "
+            "did not complete."
+        )
+
+
+def athena_request_token(
+    *,
+    event_id: str,
+    target_identity: str,
+) -> str:
+    material = (
+        f"{event_id}|{target_identity}|"
+        "athena-insert-v1"
+    )
+
+    return hashlib.sha256(
+        material.encode("utf-8")
+    ).hexdigest()
 
 
 def persist_event(
@@ -442,6 +755,7 @@ def persist_event(
     database_name: str,
     table_name: str,
     workgroup: str,
+    client_request_token: str,
     timeout_seconds: float = 30.0,
 ) -> str:
     query = build_insert_sql(
@@ -453,6 +767,9 @@ def persist_event(
     response = (
         athena_client.start_query_execution(
             QueryString=query,
+            ClientRequestToken=(
+                client_request_token
+            ),
             QueryExecutionContext={
                 "Database": database_name,
             },
@@ -487,10 +804,13 @@ def persist_event(
             "FAILED",
             "CANCELLED",
         }:
-            raise QuarantineRuntimeError(
+            raise QuarantinePersistenceError(
                 "Quarantine event Athena write "
                 f"{state}: "
-                f"{status.get('StateChangeReason', '')}"
+                f"{status.get('StateChangeReason', '')}",
+                query_id=query_id,
+                state=state,
+                compensation_safe=True,
             )
 
         if (
@@ -502,11 +822,52 @@ def persist_event(
                 athena_client.stop_query_execution(
                     QueryExecutionId=query_id
                 )
-            finally:
-                raise QuarantineRuntimeError(
-                    "Quarantine event Athena write "
-                    "timed out."
+
+                settled_status = (
+                    athena_client
+                    .get_query_execution(
+                        QueryExecutionId=query_id
+                    )[
+                        "QueryExecution"
+                    ][
+                        "Status"
+                    ]
                 )
+            except Exception as error:
+                raise QuarantinePersistenceError(
+                    "Quarantine event Athena write "
+                    "timed out and its final state "
+                    "could not be confirmed.",
+                    query_id=query_id,
+                    state="UNKNOWN",
+                    compensation_safe=False,
+                ) from error
+
+            settled_state = settled_status[
+                "State"
+            ]
+
+            if settled_state == "SUCCEEDED":
+                return query_id
+
+            compensation_safe = (
+                settled_state
+                in {
+                    "FAILED",
+                    "CANCELLED",
+                }
+            )
+
+            raise QuarantinePersistenceError(
+                "Quarantine event Athena write "
+                "timed out with final state "
+                f"{settled_state}.",
+                query_id=query_id,
+                state=settled_state,
+                compensation_safe=(
+                    compensation_safe
+                ),
+            )
 
         time.sleep(0.2)
 
@@ -521,6 +882,7 @@ def run_quarantine(
     table_name: str,
     workgroup: str,
     quarantined_at: str | None = None,
+    athena_timeout_seconds: float = 30.0,
 ) -> dict[str, Any]:
     validate_request(
         payload,
@@ -536,33 +898,81 @@ def run_quarantine(
         f"{target_key}"
     )
 
-    copy_result = (
-        copy_and_remove_source(
+    expected_event_id = event_identifier(
+        payload=payload,
+        destination_uri=destination_uri,
+    )
+
+    prepared = prepare_destination(
+        s3_client=s3_client,
+        bucket=data_bucket,
+        source_key=payload[
+            "source_key"
+        ],
+        target_key=target_key,
+        expected_event_id=(
+            expected_event_id
+        ),
+    )
+
+    target = prepared["target"]
+
+    event = build_event(
+        payload=payload,
+        destination_uri=destination_uri,
+        quarantined_at=object_timestamp(
+            target=target,
+            override=quarantined_at,
+        ),
+    )
+
+    request_token = athena_request_token(
+        event_id=expected_event_id,
+        target_identity=object_identity(
+            target
+        ),
+    )
+
+    try:
+        query_id = persist_event(
+            athena_client=athena_client,
+            event=event,
+            database_name=database_name,
+            table_name=table_name,
+            workgroup=workgroup,
+            client_request_token=(
+                request_token
+            ),
+            timeout_seconds=(
+                athena_timeout_seconds
+            ),
+        )
+    except QuarantinePersistenceError as error:
+        if (
+            error.compensation_safe
+            and prepared["source"]
+            is not None
+        ):
+            compensate_destination(
+                s3_client=s3_client,
+                bucket=data_bucket,
+                target_key=target_key,
+            )
+
+        raise
+
+    source_was_present = (
+        prepared["source"] is not None
+    )
+
+    if source_was_present:
+        remove_source(
             s3_client=s3_client,
             bucket=data_bucket,
             source_key=payload[
                 "source_key"
             ],
-            target_key=target_key,
         )
-    )
-
-    event = build_event(
-        payload=payload,
-        destination_uri=destination_uri,
-        quarantined_at=(
-            quarantined_at
-            or utc_now()
-        ),
-    )
-
-    query_id = persist_event(
-        athena_client=athena_client,
-        event=event,
-        database_name=database_name,
-        table_name=table_name,
-        workgroup=workgroup,
-    )
 
     return {
         "status": "PASS",
@@ -576,7 +986,19 @@ def run_quarantine(
         "quarantine_event": event,
         "quarantine_object": {
             "uri": destination_uri,
-            **copy_result,
+            "content_length": target.get(
+                "ContentLength"
+            ),
+            "etag": target.get("ETag"),
+            "source_removed": True,
+            "destination_created": (
+                prepared[
+                    "destination_created"
+                ]
+            ),
+            "idempotent_replay": (
+                not source_was_present
+            ),
         },
         "athena_query_execution_id": (
             query_id
