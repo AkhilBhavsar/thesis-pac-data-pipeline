@@ -31,7 +31,7 @@ resource "aws_lambda_function" "c2_quarantine" {
     "C2 bounded-remediation quarantine runtime for isolated rejected outputs."
   )
 
-  role = module.runtime_iam.role_arns["lambda"]
+  role = module.runtime_iam.role_arns["c2_quarantine"]
 
   runtime = "python3.12"
   handler = "lambda_handler.lambda_handler"
@@ -66,6 +66,7 @@ resource "aws_lambda_function" "c2_quarantine" {
   }
 
   depends_on = [
+    module.runtime_iam,
     aws_cloudwatch_log_group.c2_quarantine
   ]
 }

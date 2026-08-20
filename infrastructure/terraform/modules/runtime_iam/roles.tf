@@ -42,6 +42,52 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_logging" {
   policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role" "c2_quarantine_runtime" {
+  name = "${local.name_prefix}-c2-quarantine-runtime"
+
+  description = (
+    "Least-privilege Lambda execution role for C2 quarantine containment."
+  )
+
+  assume_role_policy = (
+    data.aws_iam_policy_document.lambda_assume_role.json
+  )
+
+  max_session_duration = 3600
+}
+
+resource "aws_iam_policy" "c2_quarantine_runtime" {
+  name = "${local.name_prefix}-c2-quarantine-runtime"
+
+  description = (
+    "Least-privilege C2 experiment, quarantine, Athena and Glue permissions."
+  )
+
+  policy = (
+    data.aws_iam_policy_document.c2_quarantine_runtime.json
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "c2_quarantine_runtime" {
+  role = (
+    aws_iam_role.c2_quarantine_runtime.name
+  )
+
+  policy_arn = (
+    aws_iam_policy.c2_quarantine_runtime.arn
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "c2_quarantine_basic_logging" {
+  role = (
+    aws_iam_role.c2_quarantine_runtime.name
+  )
+
+  policy_arn = (
+    "arn:${local.partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  )
+}
+
 resource "aws_iam_role" "step_functions_runtime" {
   name               = "${local.name_prefix}-step-functions-runtime"
   description        = "Execution role for thesis pipeline Step Functions workflows."

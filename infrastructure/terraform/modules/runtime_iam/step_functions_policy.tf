@@ -1,27 +1,15 @@
 data "aws_iam_policy_document" "step_functions_runtime" {
   statement {
-    sid    = "RunGlueJobsSynchronously"
-    effect = "Allow"
-
-    actions = [
-      "glue:StartJobRun",
-      "glue:GetJobRun",
-      "glue:GetJobRuns",
-      "glue:BatchStopJobRun"
-    ]
-
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "InvokeProjectLambdaFunctions"
+    sid    = "InvokeC2QuarantineLambda"
     effect = "Allow"
 
     actions = [
       "lambda:InvokeFunction"
     ]
 
-    resources = local.project_lambda_function_arns
+    resources = [
+      "arn:${local.partition}:lambda:${var.aws_region}:${var.aws_account_id}:function:${local.name_prefix}-c2-quarantine"
+    ]
   }
 
   statement {

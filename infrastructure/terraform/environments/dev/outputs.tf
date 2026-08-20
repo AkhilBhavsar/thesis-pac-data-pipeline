@@ -152,3 +152,43 @@ output "c2_quarantine_lambda_arn" {
   description = "ARN of the C2 bounded-remediation quarantine Lambda function."
   value       = aws_lambda_function.c2_quarantine.arn
 }
+
+output "github_actions_c2_role_name" {
+  description = "Name of the isolated C2 GitHub Actions IAM role."
+  value       = module.github_actions_c2.role_name
+}
+
+output "github_actions_c2_role_arn" {
+  description = "ARN of the isolated C2 GitHub Actions IAM role."
+  value       = module.github_actions_c2.role_arn
+}
+
+output "github_actions_c2_policy_arn" {
+  description = "ARN of the isolated C2 GitHub Actions IAM policy."
+  value       = module.github_actions_c2.policy_arn
+}
+
+output "github_actions_c2_subject" {
+  description = "Exact immutable GitHub OIDC subject trusted by the C2 role."
+  value       = module.github_actions_c2.github_subject
+}
+
+output "c2_fallback_state_machine_name" {
+  description = "Name of the C2 bounded fallback Step Functions state machine."
+  value       = aws_sfn_state_machine.c2_fallback.name
+}
+
+output "c2_fallback_state_machine_arn" {
+  description = "ARN of the C2 bounded fallback Step Functions state machine."
+  value       = aws_sfn_state_machine.c2_fallback.arn
+}
+
+output "c2_observability_alarm_names" {
+  description = "CloudWatch alarms covering initial C2 fallback reliability signals."
+
+  value = [
+    aws_cloudwatch_metric_alarm.c2_quarantine_errors.alarm_name,
+    aws_cloudwatch_metric_alarm.c2_fallback_executions_failed.alarm_name,
+    aws_cloudwatch_metric_alarm.c2_fallback_executions_timed_out.alarm_name
+  ]
+}
