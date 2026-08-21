@@ -31,27 +31,36 @@ on:
         required: true
         type: string
 
+
 permissions:
   contents: read
   id-token: write
+
 
 env:
   AWS_REGION: eu-west-1
   EXPECTED_C2_BRANCH: feature/c2-bounded-self-healing
   C2_GITHUB_ROLE_ARN: arn:aws:iam::522814714524:role/thesis-pac-dev-github-c2
 
+
 jobs:
+
   c2-foundation:
-    name: "C2 foundation | ${{ inputs.scenario }}"
+
+    name: "C2 bounded self-healing | ${{ inputs.scenario }}"
+
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
 
     steps:
+
       - name: Checkout locked C2 revision
         uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.expected_commit }}
           fetch-depth: 0
+
 
       - name: Guard manual C2 branch and immutable revision
         shell: bash
@@ -62,80 +71,68 @@ jobs:
           set -euo pipefail
 
           if [[ ! "${EXPECTED_COMMIT}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Expected commit must be exactly 40 lowercase hexadecimal characters."
+            echo "Invalid commit format"
             exit 1
           fi
 
-          if [ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" ]; then
-            echo "C2 workflow must be invoked manually."
-            exit 1
-          fi
+          test "${GITHUB_EVENT_NAME}" = "workflow_dispatch"
 
-          if [ "${GITHUB_REF}" != "refs/heads/${EXPECTED_C2_BRANCH}" ]; then
-            echo "C2 workflow may execute only from ${EXPECTED_C2_BRANCH}."
-            exit 1
-          fi
+          test "${GITHUB_REF}" = "refs/heads/${EXPECTED_C2_BRANCH}"
 
-          if [ "${TRIGGER_SHA}" != "${EXPECTED_COMMIT}" ]; then
-            echo "workflow_dispatch branch tip does not equal expected immutable commit."
-            exit 1
-          fi
+          test "${TRIGGER_SHA}" = "${EXPECTED_COMMIT}"
 
-          ACTUAL_COMMIT="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${EXPECTED_COMMIT}"
 
-          if [ "${ACTUAL_COMMIT}" != "${EXPECTED_COMMIT}" ]; then
-            echo "Checked-out revision does not equal expected immutable commit."
-            exit 1
-          fi
-
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "Repository must be clean after checkout."
-            git status --short
-            exit 1
-          fi
+          test -z "$(git status --porcelain)"
 
           echo "C2 immutable revision guard: PASS"
 
-      - name: Set up Python 3.11.14
+
+      - name: Setup Python 3.11.14
         uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.11.14"
 
-      - name: Record C2 foundation identity
+
+      - name: Install OPA 1.19.0
         shell: bash
-        env:
-          C2_SCENARIO: ${{ inputs.scenario }}
-          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
         run: |
           set -euo pipefail
 
-          python --version
+          curl -L \
+            -o opa \
+            https://openpolicyagent.org/downloads/v1.19.0/opa_linux_amd64_static
 
-          echo "Condition: C2"
-          echo "Scenario: ${C2_SCENARIO}"
-          echo "Commit: ${EXPECTED_COMMIT}"
-          echo "Primary remediation plane: GitHub runner"
-          echo "Fallback plane: AWS Step Functions after recovery-verification failure"
-          echo "Direct Lambda invocation: forbidden"
+          chmod +x opa
 
-      - name: Assume dedicated C2 role through GitHub OIDC
+          sudo mv opa /usr/local/bin/opa
+
+          opa version
+
+
+      - name: Assume dedicated C2 AWS role through OIDC
         uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ env.C2_GITHUB_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: thesis-pac-c2-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Verify dedicated C2 AWS identity
+
+      - name: Verify C2 AWS identity
         shell: bash
         run: |
           set -euo pipefail
 
           ACCOUNT="$(
-            aws sts get-caller-identity               --query Account               --output text
+            aws sts get-caller-identity \
+              --query Account \
+              --output text
           )"
 
           ARN="$(
-            aws sts get-caller-identity               --query Arn               --output text
+            aws sts get-caller-identity \
+              --query Arn \
+              --output text
           )"
 
           if [ "${ACCOUNT}" != "522814714524" ]; then
@@ -155,21 +152,17 @@ jobs:
           echo "Dedicated C2 AWS identity: PASS"
 
 
-      - name: Prepare C2 runtime directories
+      - name: Prepare C2 runtime
         shell: bash
         run: |
           set -euo pipefail
 
           mkdir -p \
             c2-runtime/input \
-            c2-runtime/decision \
-            c2-runtime/plan \
-            c2-runtime/context \
-            c2-runtime/workspace \
-            c2-runtime/results \
-            c2-runtime/evidence
+            c2-runtime/evidence \
+            c2-runtime/workspace
 
-          echo "C2 runtime directories prepared: PASS"
+          echo "C2 runtime directories: PASS"
 
 
       - name: Download C1 policy evidence artifact
@@ -179,85 +172,26 @@ jobs:
           path: c2-runtime/input
 
 
-      - name: Prepare C1 policy decision input
+      - name: Prepare C1 policy input
         shell: bash
         run: |
           set -euo pipefail
 
-          POLICY_DECISION=$(find c2-runtime/input -name "*.json" | grep "policy" | head -1)
+          POLICY_DECISION=$(find c2-runtime/input -name "*.json" | grep policy | head -1)
 
           if [ -z "${POLICY_DECISION}" ]; then
-            echo "No C1 policy decision artifact found"
+            echo "Missing C1 policy decision artifact"
             find c2-runtime/input -type f
             exit 1
           fi
 
-          cp "${POLICY_DECISION}" c2-runtime/input/policy-decision.json
+          cp "${POLICY_DECISION}" \
+            c2-runtime/input/policy-decision.json
 
-          echo "C1 policy decision input available: PASS"
-
-
-      - name: Build C2 policy decision projection
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 scripts/policy/build_c2_policy_decision.py \
-            --decision c2-runtime/input/policy-decision.json \
-            --catalog policies/catalog/c2-remediation-catalog.json \
-            --schema policies/contracts/c2-policy-decision-projection.schema.json \
-            --output c2-runtime/decision/c2-policy-decision.json
-
-          echo "C2 policy decision projection: PASS"
+          echo "C1 policy input: PASS"
 
 
-      - name: Build deterministic C2 remediation plan
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 scripts/policy/build_c2_remediation_plan.py \
-            --decision c2-runtime/decision/c2-policy-decision.json \
-            --catalog policies/catalog/c2-remediation-catalog.json \
-            --schema policies/contracts/c2-remediation-plan.schema.json \
-            --output c2-runtime/plan/remediation-plan.json
-
-          echo "C2 remediation plan: PASS"
-
-
-      - name: Build isolated C2 execution context
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 scripts/remediation/build_c2_execution_context.py \
-            --plan c2-runtime/plan/remediation-plan.json \
-            --schema policies/contracts/c2-remediation-execution-context.schema.json \
-            --workspace-root c2-runtime/workspace \
-            --context-output c2-runtime/context/execution-context.json \
-            --preparation-output c2-runtime/context/preparation.json
-
-          echo "C2 execution context: PASS"
-
-
-      - name: Execute bounded C2 remediation
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          python3 scripts/remediation/execute_c2_remediation.py \
-            --plan c2-runtime/plan/remediation-plan.json \
-            --context c2-runtime/context/execution-context.json \
-            --plan-schema policies/contracts/c2-remediation-plan.schema.json \
-            --context-schema policies/contracts/c2-remediation-execution-context.schema.json \
-            --result-schema policies/contracts/c2-remediation-result.schema.json \
-            --workspace-root c2-runtime/workspace \
-            --result-output c2-runtime/results/remediation-result.json \
-            --details-output c2-runtime/results/remediation-details.json
-
-          echo "C2 remediation execution: PASS"
-
-      - name: Record C2 workflow foundation summary
+      - name: Initialise C2 wrapper environment
         shell: bash
         env:
           C2_SCENARIO: ${{ inputs.scenario }}
@@ -265,15 +199,83 @@ jobs:
         run: |
           set -euo pipefail
 
+          RUN_KEY="gha_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+
           {
-            echo "## C2 bounded self-healing workflow foundation"
+            echo "THESIS_GIT_BRANCH=${GITHUB_REF_NAME}"
+            echo "THESIS_EXPERIMENT_CONDITION=C2"
+            echo "THESIS_SCENARIO_ID=${C2_SCENARIO}"
+            echo "THESIS_GIT_COMMIT=${EXPECTED_COMMIT}"
+            echo "C2_RUN_KEY=${RUN_KEY}"
+            echo "C2_TARGET_LAYER=gold_public"
+          } >> "${GITHUB_ENV}"
+
+          echo "C2 wrapper environment: PASS"
+
+
+      - name: Execute deterministic C2 bounded self-healing wrapper
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 scripts/github_actions/run_c2_bounded_self_healing.py \
+            --decision c2-runtime/input/policy-decision.json \
+            --catalog policies/catalog/c2-remediation-catalog.json \
+            --decision-schema policies/contracts/c2-policy-decision-projection.schema.json \
+            --plan-schema policies/contracts/c2-remediation-plan.schema.json \
+            --context-schema policies/contracts/c2-remediation-execution-context.schema.json \
+            --result-schema policies/contracts/c2-remediation-result.schema.json \
+            --opa-bin opa \
+            --evidence-root c2-runtime/evidence
+
+          echo "C2 wrapper execution: PASS"
+
+
+      - name: Validate C2 completion evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f c2-runtime/evidence/c2-runtime-complete.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(
+              Path(
+                  "c2-runtime/evidence/c2-runtime-complete.json"
+              ).read_text()
+          )
+
+          assert payload["status"] == "PASS"
+          assert payload["condition"] == "C2"
+
+          print("C2 evidence validation: PASS")
+          PY
+
+
+      - name: Upload C2 evidence artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: c2-bounded-self-healing-${{ github.run_id }}-${{ github.run_attempt }}
+          path: c2-runtime/evidence
+
+
+      - name: Record C2 summary
+        shell: bash
+        env:
+          C2_SCENARIO: ${{ inputs.scenario }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          {
+            echo "## C2 bounded self-healing execution"
             echo
             echo "- Condition: C2"
             echo "- Scenario: ${C2_SCENARIO}"
             echo "- Commit: ${EXPECTED_COMMIT}"
-            echo "- Trigger: workflow_dispatch only"
-            echo "- Primary remediation: GitHub runner"
-            echo "- AWS fallback execution: not wired in this foundation checkpoint"
-            echo "- Direct Lambda invocation: forbidden"
-            echo "- Authoritative experiment: no"
+            echo "- Wrapper: run_c2_bounded_self_healing.py"
+            echo "- Recovery verification: enabled"
+            echo "- Fallback request generation: enabled"
+            echo "- Evidence artifact: uploaded"
           } >> "${GITHUB_STEP_SUMMARY}"

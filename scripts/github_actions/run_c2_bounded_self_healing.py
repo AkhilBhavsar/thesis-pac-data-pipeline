@@ -495,7 +495,7 @@ def main() -> int:
         catalog=args.catalog,
         schema=(
             "policies/contracts/"
-            "c2-fallback-request.schema.json"
+            "c2-fallback-request-input.schema.json"
         ),
         output=str(fallback_output),
     )
