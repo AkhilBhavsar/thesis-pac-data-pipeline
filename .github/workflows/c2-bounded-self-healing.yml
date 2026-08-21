@@ -242,6 +242,10 @@ jobs:
 
           test -f c2-runtime/evidence/c2-runtime-complete.json
 
+          echo "===== C2 completion evidence ====="
+          cat c2-runtime/evidence/c2-runtime-complete.json
+          echo "=================================="
+
           python3 - <<'PY'
           import json
           from pathlib import Path
@@ -251,6 +255,8 @@ jobs:
                   "c2-runtime/evidence/c2-runtime-complete.json"
               ).read_text()
           )
+
+          print(json.dumps(payload, indent=2))
 
           assert payload["status"] == "PASS"
           assert payload["condition"] == "C2"
