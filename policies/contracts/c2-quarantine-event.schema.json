@@ -1,0 +1,124 @@
+{
+  "$id": "https://thesis-pac.local/contracts/c2-quarantine-event.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "data_classification": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "detected_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "evidence_uri": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "final_state": {
+      "const": "QUARANTINED"
+    },
+    "manual_review_required": {
+      "const": false
+    },
+    "manual_review_status": {
+      "const": "NOT_REQUIRED"
+    },
+    "max_retries": {
+      "maximum": 2,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "policy_category": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "policy_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "quarantine_event_id": {
+      "pattern": "^c2-q-[0-9a-f]{24}$",
+      "type": "string"
+    },
+    "quarantined_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "rejected_output_location": {
+      "pattern": "^s3://.+/quarantine/objects/",
+      "type": "string"
+    },
+    "release_status": {
+      "const": "BLOCKED"
+    },
+    "released_at": {
+      "type": "null"
+    },
+    "remediation_action": {
+      "const": "quarantine"
+    },
+    "remediation_status": {
+      "const": "SUCCEEDED"
+    },
+    "retry_count": {
+      "maximum": 2,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "run_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "scenario_id": {
+      "enum": [
+        "pii_exposure",
+        "freshness_breach",
+        "quality_regression"
+      ]
+    },
+    "source_dataset": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source_relation": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "violation_code": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "violation_details": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "quarantine_event_id",
+    "run_id",
+    "scenario_id",
+    "source_dataset",
+    "source_relation",
+    "rejected_output_location",
+    "policy_category",
+    "policy_id",
+    "violation_code",
+    "violation_details",
+    "data_classification",
+    "detected_at",
+    "quarantined_at",
+    "remediation_action",
+    "remediation_status",
+    "retry_count",
+    "max_retries",
+    "manual_review_required",
+    "manual_review_status",
+    "release_status",
+    "released_at",
+    "final_state",
+    "evidence_uri"
+  ],
+  "title": "C2 Quarantine Control Event",
+  "type": "object"
+}

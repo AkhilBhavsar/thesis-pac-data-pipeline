@@ -39,7 +39,7 @@ models:
         +materialized: table
         +table_type: hive
         +format: parquet
-        +schema: thesis_pac_dev_gold_internal
+        +schema: "{{ env_var('DBT_GOLD_INTERNAL_SCHEMA', 'thesis_pac_dev_gold_internal') }}"
         +tags:
           - gold
           - internal
@@ -49,7 +49,7 @@ models:
         +materialized: table
         +table_type: hive
         +format: parquet
-        +schema: thesis_pac_dev_gold_public
+        +schema: "{{ env_var('DBT_GOLD_PUBLIC_SCHEMA', 'thesis_pac_dev_gold_public') }}"
         +tags:
           - gold
           - public

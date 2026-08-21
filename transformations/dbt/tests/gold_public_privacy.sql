@@ -1,11 +1,16 @@
 {{ config(tags=['gold']) }}
 
+{% set gold_public_schema = env_var(
+    'DBT_GOLD_PUBLIC_SCHEMA',
+    'thesis_pac_dev_gold_public'
+) | trim %}
+
 select
     column_name
 
 from information_schema.columns
 
-where table_schema = 'thesis_pac_dev_gold_public'
+where table_schema = '{{ gold_public_schema }}'
     and table_name = 'gold_public_sales_dashboard'
     and (
         lower(column_name) in (

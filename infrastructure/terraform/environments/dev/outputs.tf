@@ -97,3 +97,98 @@ output "dbt_glue_database_name" {
   description = "Glue database used for controlled dbt transformations."
   value       = module.glue_catalog.dbt_database_name
 }
+
+output "github_actions_c0_oidc_provider_arn" {
+  description = "ARN of the GitHub Actions OIDC provider."
+  value       = module.github_actions_c0.oidc_provider_arn
+}
+
+output "github_actions_c0_role_name" {
+  description = "Name of the isolated C0 GitHub Actions role."
+  value       = module.github_actions_c0.role_name
+}
+
+output "github_actions_c0_role_arn" {
+  description = "ARN of the isolated C0 GitHub Actions role."
+  value       = module.github_actions_c0.role_arn
+}
+
+output "github_actions_c0_policy_arn" {
+  description = "ARN of the isolated C0 GitHub Actions policy."
+  value       = module.github_actions_c0.policy_arn
+}
+
+output "github_actions_c0_subject" {
+  description = "Exact immutable GitHub OIDC subject trusted by the C0 role."
+  value       = module.github_actions_c0.github_subject
+}
+
+output "github_actions_c1_role_name" {
+  description = "Name of the isolated C1 GitHub Actions IAM role."
+  value       = module.github_actions_c1.role_name
+}
+
+output "github_actions_c1_role_arn" {
+  description = "ARN of the isolated C1 GitHub Actions IAM role."
+  value       = module.github_actions_c1.role_arn
+}
+
+output "github_actions_c1_policy_arn" {
+  description = "ARN of the isolated C1 GitHub Actions IAM policy."
+  value       = module.github_actions_c1.policy_arn
+}
+
+output "github_actions_c1_subject" {
+  description = "Exact immutable GitHub OIDC subject trusted by the C1 role."
+  value       = module.github_actions_c1.github_subject
+}
+
+output "c2_quarantine_lambda_name" {
+  description = "C2 bounded-remediation quarantine Lambda function name."
+  value       = aws_lambda_function.c2_quarantine.function_name
+}
+
+output "c2_quarantine_lambda_arn" {
+  description = "ARN of the C2 bounded-remediation quarantine Lambda function."
+  value       = aws_lambda_function.c2_quarantine.arn
+}
+
+output "github_actions_c2_role_name" {
+  description = "Name of the isolated C2 GitHub Actions IAM role."
+  value       = module.github_actions_c2.role_name
+}
+
+output "github_actions_c2_role_arn" {
+  description = "ARN of the isolated C2 GitHub Actions IAM role."
+  value       = module.github_actions_c2.role_arn
+}
+
+output "github_actions_c2_policy_arn" {
+  description = "ARN of the isolated C2 GitHub Actions IAM policy."
+  value       = module.github_actions_c2.policy_arn
+}
+
+output "github_actions_c2_subject" {
+  description = "Exact immutable GitHub OIDC subject trusted by the C2 role."
+  value       = module.github_actions_c2.github_subject
+}
+
+output "c2_fallback_state_machine_name" {
+  description = "Name of the C2 bounded fallback Step Functions state machine."
+  value       = aws_sfn_state_machine.c2_fallback.name
+}
+
+output "c2_fallback_state_machine_arn" {
+  description = "ARN of the C2 bounded fallback Step Functions state machine."
+  value       = aws_sfn_state_machine.c2_fallback.arn
+}
+
+output "c2_observability_alarm_names" {
+  description = "CloudWatch alarms covering initial C2 fallback reliability signals."
+
+  value = [
+    aws_cloudwatch_metric_alarm.c2_quarantine_errors.alarm_name,
+    aws_cloudwatch_metric_alarm.c2_fallback_executions_failed.alarm_name,
+    aws_cloudwatch_metric_alarm.c2_fallback_executions_timed_out.alarm_name
+  ]
+}

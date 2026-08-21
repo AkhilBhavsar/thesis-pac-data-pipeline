@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thesis-pac.local/contracts/policy-input.schema.json",
+  "title": "C1 Policy-as-Code Normalized Input",
+  "description": "Stable normalized input contract consumed by C1 policy evaluation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evaluation_stage",
+    "experiment",
+    "controls",
+    "git",
+    "release",
+    "metadata",
+    "schema_contract",
+    "transformation",
+    "privacy",
+    "quality",
+    "freshness",
+    "runtime"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "evaluation_stage": {
+      "enum": [
+        "pre",
+        "post"
+      ]
+    },
+    "experiment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "condition",
+        "scenario_id",
+        "run_key"
+      ],
+      "properties": {
+        "condition": {
+          "const": "C1"
+        },
+        "scenario_id": {
+          "enum": [
+            "baseline",
+            "schema_break",
+            "pii_exposure",
+            "freshness_breach",
+            "quality_regression",
+            "policy_false_positive"
+          ]
+        },
+        "run_key": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_as_code_required",
+        "self_healing_permitted",
+        "automatic_remediation_permitted"
+      ],
+      "properties": {
+        "policy_as_code_required": {
+          "const": true
+        },
+        "self_healing_permitted": {
+          "const": false
+        },
+        "automatic_remediation_permitted": {
+          "const": false
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch",
+        "commit"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_layer",
+        "promotion_requested"
+      ],
+      "properties": {
+        "target_layer": {
+          "enum": [
+            "silver",
+            "gold_internal",
+            "gold_public"
+          ]
+        },
+        "promotion_requested": {
+          "type": "boolean"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_fields_present",
+        "resource_count"
+      ],
+      "properties": {
+        "required_fields_present": {
+          "type": "boolean"
+        },
+        "resource_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "schema_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "governed_models"
+      ],
+      "properties": {
+        "governed_models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "model",
+              "exposure",
+              "expected_column_count",
+              "actual_column_count",
+              "missing_columns",
+              "unexpected_columns",
+              "incompatible_type_changes"
+            ],
+            "properties": {
+              "model": {
+                "type": "string",
+                "minLength": 1
+              },
+              "exposure": {
+                "enum": [
+                  "internal",
+                  "public"
+                ]
+              },
+              "expected_column_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "actual_column_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "missing_columns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unexpected_columns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "incompatible_type_changes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "transformation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "changed_models",
+        "unapproved_definitions",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "changed_models": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unapproved_definitions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manifest_sha256": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "public_models",
+        "forbidden_columns",
+        "detected_forbidden_columns"
+      ],
+      "properties": {
+        "public_models": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbidden_columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "detected_forbidden_columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "total_tests",
+        "failed_tests",
+        "critical_failures"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "NOT_EVALUATED",
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "total_tests": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed_tests": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "critical_failures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "sources"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "NOT_EVALUATED",
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "observed_age_seconds",
+              "maximum_age_seconds",
+              "status"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "observed_age_seconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "maximum_age_seconds": {
+                "type": "number",
+                "minimum": 0
+              },
+              "status": {
+                "enum": [
+                  "PASS",
+                  "FAIL"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pipeline_status",
+        "canonical_unchanged",
+        "isolated_output_tables",
+        "athena_failed_queries"
+      ],
+      "properties": {
+        "pipeline_status": {
+          "enum": [
+            "NOT_RUN",
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "canonical_unchanged": {
+          "type": "boolean"
+        },
+        "isolated_output_tables": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "athena_failed_queries": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

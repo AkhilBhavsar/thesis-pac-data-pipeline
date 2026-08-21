@@ -1,0 +1,170 @@
+{
+  "catalog_version": "1.0.0",
+  "condition": "C1",
+  "description": "Policy-as-Code taxonomy for governed cloud-native data pipeline CI/CD.",
+  "categories": [
+    {
+      "id": "metadata",
+      "description": "Governance metadata required to evaluate and trace a release."
+    },
+    {
+      "id": "schema_contract",
+      "description": "Governed dataset schemas, contracts, compatibility, and public-output privacy."
+    },
+    {
+      "id": "transformation_definition",
+      "description": "Governed transformation definitions and approved transformation scope."
+    },
+    {
+      "id": "release_rule",
+      "description": "Rules controlling whether an evaluated change may be promoted."
+    },
+    {
+      "id": "runtime_validation",
+      "description": "Policies derived from runtime quality, freshness, integrity, and execution outcomes."
+    }
+  ],
+  "experiment_scenarios": [
+    "schema_break",
+    "pii_exposure",
+    "freshness_breach",
+    "quality_regression",
+    "policy_false_positive"
+  ],
+  "policies": [
+    {
+      "policy_id": "PAC-META-001",
+      "category": "metadata",
+      "title": "Required governance metadata",
+      "severity": "deny",
+      "evaluation_stages": [
+        "pre",
+        "post"
+      ],
+      "scenarios": [
+        "schema_break",
+        "pii_exposure",
+        "freshness_breach",
+        "quality_regression",
+        "policy_false_positive"
+      ],
+      "description": "Require the normalized governance metadata needed to make a reproducible policy decision.",
+      "implemented": true
+    },
+    {
+      "policy_id": "PAC-SCHEMA-001",
+      "category": "schema_contract",
+      "title": "Governed Gold schema compatibility",
+      "severity": "deny",
+      "evaluation_stages": [
+        "pre"
+      ],
+      "scenarios": [
+        "schema_break",
+        "policy_false_positive"
+      ],
+      "description": "Deny removal, incompatible change, or violation of a required governed Gold contract.",
+      "implemented": true
+    },
+    {
+      "policy_id": "PAC-PRIVACY-001",
+      "category": "schema_contract",
+      "title": "Public Gold privacy boundary",
+      "severity": "deny",
+      "evaluation_stages": [
+        "pre",
+        "post"
+      ],
+      "scenarios": [
+        "pii_exposure",
+        "policy_false_positive"
+      ],
+      "description": "Deny governed sensitive fields from public Gold outputs.",
+      "implemented": true
+    },
+    {
+      "policy_id": "PAC-TRANSFORM-001",
+      "category": "transformation_definition",
+      "title": "Governed transformation definition",
+      "severity": "deny",
+      "evaluation_stages": [
+        "pre"
+      ],
+      "scenarios": [
+        "schema_break",
+        "pii_exposure",
+        "quality_regression",
+        "policy_false_positive"
+      ],
+      "description": "Deny unapproved or out-of-scope governed transformation definitions.",
+      "implemented": true
+    },
+    {
+      "policy_id": "PAC-RELEASE-001",
+      "category": "release_rule",
+      "title": "Release promotion decision",
+      "severity": "deny",
+      "evaluation_stages": [
+        "pre",
+        "post"
+      ],
+      "scenarios": [
+        "schema_break",
+        "pii_exposure",
+        "freshness_breach",
+        "quality_regression",
+        "policy_false_positive"
+      ],
+      "description": "Deny promotion when any blocking policy violation remains unresolved.",
+      "implemented": true
+    },
+    {
+      "policy_id": "PAC-QUALITY-001",
+      "category": "runtime_validation",
+      "title": "Critical data-quality outcome",
+      "severity": "deny",
+      "evaluation_stages": [
+        "post"
+      ],
+      "scenarios": [
+        "quality_regression",
+        "policy_false_positive"
+      ],
+      "description": "Deny promotion when a governed critical data-quality validation fails.",
+      "implemented": true
+    },
+    {
+      "policy_id": "PAC-FRESH-001",
+      "category": "runtime_validation",
+      "title": "Freshness threshold",
+      "severity": "deny",
+      "evaluation_stages": [
+        "post"
+      ],
+      "scenarios": [
+        "freshness_breach",
+        "policy_false_positive"
+      ],
+      "description": "Deny promotion when governed source or output freshness exceeds its configured threshold.",
+      "implemented": true
+    },
+    {
+      "policy_id": "PAC-RUNTIME-001",
+      "category": "runtime_validation",
+      "title": "Runtime execution integrity",
+      "severity": "deny",
+      "evaluation_stages": [
+        "post"
+      ],
+      "scenarios": [
+        "schema_break",
+        "pii_exposure",
+        "freshness_breach",
+        "quality_regression",
+        "policy_false_positive"
+      ],
+      "description": "Deny promotion when pipeline execution, isolated output validation, canonical protection, or Athena execution integrity fails.",
+      "implemented": true
+    }
+  ]
+}

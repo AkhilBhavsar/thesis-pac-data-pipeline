@@ -1,0 +1,98 @@
+{
+  "actions": [
+    "retry",
+    "rollback",
+    "quarantine",
+    "redact_republish",
+    "stop_promotion",
+    "manual_review"
+  ],
+  "catalog_version": "1.0.0",
+  "condition": "C2",
+  "description": "Authoritative allow-listed bounded remediation matrix for the C2 experimental condition.",
+  "principles": {
+    "automatic_actions_allowlist_only": true,
+    "canonical_mutation_before_verification": false,
+    "fail_closed": true,
+    "false_positive_automatic_remediation_forbidden": true,
+    "maximum_automatic_attempts": 2,
+    "maximum_automatic_timeout_seconds": 300,
+    "policy_denial_precedes_remediation": true,
+    "promotion_blocked_until_verified_safe": true,
+    "verification_required_after_action": true
+  },
+  "scenarios": {
+    "freshness_breach": {
+      "automatic_remediation_permitted": true,
+      "detection_stage": "post",
+      "fallback_action": "quarantine",
+      "ground_truth": "UNSAFE",
+      "max_attempts": 2,
+      "primary_action": "retry",
+      "target_scope": "isolated_output",
+      "timeout_seconds": 300,
+      "verification": [
+        "freshness",
+        "runtime",
+        "release_policy"
+      ]
+    },
+    "pii_exposure": {
+      "automatic_remediation_permitted": true,
+      "detection_stage": "pre",
+      "fallback_action": "quarantine",
+      "ground_truth": "UNSAFE",
+      "max_attempts": 1,
+      "primary_action": "redact_republish",
+      "target_scope": "isolated_public_candidate",
+      "timeout_seconds": 300,
+      "verification": [
+        "privacy",
+        "schema_contract",
+        "release_policy"
+      ]
+    },
+    "policy_false_positive": {
+      "automatic_remediation_permitted": false,
+      "detection_stage": "pre",
+      "fallback_action": "stop_promotion",
+      "ground_truth": "SAFE",
+      "max_attempts": 0,
+      "primary_action": "manual_review",
+      "target_scope": "release_state",
+      "timeout_seconds": 0,
+      "verification": [
+        "manual_policy_review"
+      ]
+    },
+    "quality_regression": {
+      "automatic_remediation_permitted": true,
+      "detection_stage": "post",
+      "fallback_action": "quarantine",
+      "ground_truth": "UNSAFE",
+      "max_attempts": 1,
+      "primary_action": "rollback",
+      "target_scope": "isolated_output",
+      "timeout_seconds": 300,
+      "verification": [
+        "quality",
+        "runtime",
+        "release_policy"
+      ]
+    },
+    "schema_break": {
+      "automatic_remediation_permitted": true,
+      "detection_stage": "pre",
+      "fallback_action": "manual_review",
+      "ground_truth": "UNSAFE",
+      "max_attempts": 1,
+      "primary_action": "rollback",
+      "target_scope": "isolated_release_candidate",
+      "timeout_seconds": 300,
+      "verification": [
+        "schema_contract",
+        "release_policy"
+      ]
+    }
+  }
+}

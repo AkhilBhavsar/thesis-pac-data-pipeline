@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thesis-pac.local/contracts/c2-fallback-request-input.schema.json",
+  "title": "C2 Step Functions Fallback Request Input",
+  "description": "Contract for input passed by GitHub Actions to the bounded C2 fallback Step Functions state machine. For quarantine fallbacks the nested quarantine_request contains 13 fields; Step Functions projects condition, scenario_id and run_key as the remaining Lambda request fields.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "condition",
+    "scenario_id",
+    "fallback_action",
+    "run_key"
+  ],
+  "properties": {
+    "condition": {
+      "const": "C2"
+    },
+    "scenario_id": {
+      "enum": [
+        "schema_break",
+        "pii_exposure",
+        "freshness_breach",
+        "quality_regression",
+        "policy_false_positive"
+      ]
+    },
+    "fallback_action": {
+      "enum": [
+        "quarantine",
+        "manual_review",
+        "stop_promotion"
+      ]
+    },
+    "run_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "quarantine_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "data_classification",
+        "detected_at",
+        "evidence_uri",
+        "max_retries",
+        "policy_category",
+        "policy_id",
+        "retry_count",
+        "source_bucket",
+        "source_dataset",
+        "source_key",
+        "source_relation",
+        "violation_code",
+        "violation_details"
+      ],
+      "properties": {
+        "data_classification": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "detected_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence_uri": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "max_retries": {
+          "description": "Compatibility field name representing the bounded primary-remediation attempt budget before fallback. Derived from remediation_plan.plan.max_attempts.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "policy_category": {
+          "enum": [
+            "privacy",
+            "freshness",
+            "quality"
+          ]
+        },
+        "policy_id": {
+          "type": "string",
+          "pattern": "^PAC-[A-Z]+-[0-9]{3}$"
+        },
+        "retry_count": {
+          "description": "Compatibility field name representing bounded primary-remediation attempts consumed before fallback. Derived from remediation_result.attempt_count.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "source_bucket": {
+          "const": "thesis-pac-dev-data-lake-522814714524-eu-west-1"
+        },
+        "source_dataset": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "source_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^experiments/c2/"
+        },
+        "source_relation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "violation_code": {
+          "type": "string",
+          "pattern": "^PAC-[A-Z]+-[0-9]{3}$"
+        },
+        "violation_details": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "scenario_id": {
+            "enum": [
+              "pii_exposure",
+              "freshness_breach",
+              "quality_regression"
+            ]
+          }
+        },
+        "required": [
+          "scenario_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "fallback_action": {
+            "const": "quarantine"
+          }
+        },
+        "required": [
+          "quarantine_request"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scenario_id": {
+            "const": "schema_break"
+          }
+        },
+        "required": [
+          "scenario_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "fallback_action": {
+            "const": "manual_review"
+          }
+        },
+        "not": {
+          "required": [
+            "quarantine_request"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scenario_id": {
+            "const": "policy_false_positive"
+          }
+        },
+        "required": [
+          "scenario_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "fallback_action": {
+            "const": "stop_promotion"
+          }
+        },
+        "not": {
+          "required": [
+            "quarantine_request"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fallback_action": {
+            "const": "quarantine"
+          }
+        },
+        "required": [
+          "fallback_action"
+        ]
+      },
+      "then": {
+        "required": [
+          "quarantine_request"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "quarantine_request"
+          ]
+        }
+      }
+    }
+  ]
+}

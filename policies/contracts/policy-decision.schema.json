@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "policy-decision.schema.json",
+  "title": "C1 Unified Policy Decision Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "recorded_at_utc",
+    "condition",
+    "run_key",
+    "scenario_id",
+    "evaluation_stage",
+    "git",
+    "controls",
+    "promotion_requested",
+    "decision",
+    "allow",
+    "violation_count",
+    "triggered_policy_ids",
+    "violations",
+    "policy_outcomes",
+    "implemented_policy_ids",
+    "unimplemented_policy_ids",
+    "evaluation_ms",
+    "input_sha256",
+    "policy_bundle_sha256",
+    "measurement"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "recorded_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "condition": {
+      "const": "C1"
+    },
+    "run_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_id": {
+      "enum": [
+        "baseline",
+        "schema_break",
+        "pii_exposure",
+        "freshness_breach",
+        "quality_regression",
+        "policy_false_positive"
+      ]
+    },
+    "evaluation_stage": {
+      "enum": [
+        "pre",
+        "post"
+      ]
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch",
+        "commit"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_as_code_required",
+        "self_healing_permitted",
+        "automatic_remediation_permitted"
+      ],
+      "properties": {
+        "policy_as_code_required": {
+          "const": true
+        },
+        "self_healing_permitted": {
+          "const": false
+        },
+        "automatic_remediation_permitted": {
+          "const": false
+        }
+      }
+    },
+    "promotion_requested": {
+      "type": "boolean"
+    },
+    "decision": {
+      "enum": [
+        "ALLOW",
+        "DENY"
+      ]
+    },
+    "allow": {
+      "type": "boolean"
+    },
+    "violation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "triggered_policy_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^PAC-[A-Z]+-[0-9]{3}$"
+      }
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policy_id",
+          "category",
+          "severity",
+          "reason",
+          "details"
+        ],
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "pattern": "^PAC-[A-Z]+-[0-9]{3}$"
+          },
+          "category": {
+            "enum": [
+              "metadata",
+              "schema_contract",
+              "transformation_definition",
+              "release_rule",
+              "runtime_validation"
+            ]
+          },
+          "severity": {
+            "const": "deny"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "policy_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policy_id",
+          "title",
+          "category",
+          "severity",
+          "applicable",
+          "outcome",
+          "violation_count",
+          "reasons"
+        ],
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "pattern": "^PAC-[A-Z]+-[0-9]{3}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "enum": [
+              "metadata",
+              "schema_contract",
+              "transformation_definition",
+              "release_rule",
+              "runtime_validation"
+            ]
+          },
+          "severity": {
+            "const": "deny"
+          },
+          "applicable": {
+            "type": "boolean"
+          },
+          "outcome": {
+            "enum": [
+              "PASS",
+              "DENY",
+              "NOT_APPLICABLE"
+            ]
+          },
+          "violation_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reasons": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "implemented_policy_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^PAC-[A-Z]+-[0-9]{3}$"
+      }
+    },
+    "unimplemented_policy_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^PAC-[A-Z]+-[0-9]{3}$"
+      }
+    },
+    "evaluation_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_bundle_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_evaluation_ms",
+        "violation_count",
+        "applicable_policy_count",
+        "denied_policy_count",
+        "promotion_requested",
+        "promotion_blocked"
+      ],
+      "properties": {
+        "policy_evaluation_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "violation_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "applicable_policy_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denied_policy_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "promotion_requested": {
+          "type": "boolean"
+        },
+        "promotion_blocked": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

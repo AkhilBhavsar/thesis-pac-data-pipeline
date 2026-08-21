@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0.0",
+  "evaluation_stage": "pre",
+  "experiment": {
+    "condition": "C1",
+    "scenario_id": "baseline",
+    "run_key": "c1-safe-contract-fixture"
+  },
+  "controls": {
+    "policy_as_code_required": true,
+    "self_healing_permitted": false,
+    "automatic_remediation_permitted": false
+  },
+  "git": {
+    "branch": "feature/policy-as-code-gates",
+    "commit": "2764381fa6116c135787b7109c8e38f459a2bd05"
+  },
+  "release": {
+    "target_layer": "gold_public",
+    "promotion_requested": true
+  },
+  "metadata": {
+    "required_fields_present": true,
+    "resource_count": 15
+  },
+  "schema_contract": {
+    "governed_models": [
+      {
+        "model": "gold_daily_sales",
+        "exposure": "internal",
+        "expected_column_count": 9,
+        "actual_column_count": 9,
+        "missing_columns": [],
+        "unexpected_columns": [],
+        "incompatible_type_changes": []
+      },
+      {
+        "model": "gold_sales_by_state",
+        "exposure": "internal",
+        "expected_column_count": 8,
+        "actual_column_count": 8,
+        "missing_columns": [],
+        "unexpected_columns": [],
+        "incompatible_type_changes": []
+      },
+      {
+        "model": "gold_product_category_revenue",
+        "exposure": "internal",
+        "expected_column_count": 9,
+        "actual_column_count": 9,
+        "missing_columns": [],
+        "unexpected_columns": [],
+        "incompatible_type_changes": []
+      },
+      {
+        "model": "gold_customer_order_summary",
+        "exposure": "internal",
+        "expected_column_count": 11,
+        "actual_column_count": 11,
+        "missing_columns": [],
+        "unexpected_columns": [],
+        "incompatible_type_changes": []
+      },
+      {
+        "model": "gold_public_sales_dashboard",
+        "exposure": "public",
+        "expected_column_count": 8,
+        "actual_column_count": 8,
+        "missing_columns": [],
+        "unexpected_columns": [],
+        "incompatible_type_changes": []
+      }
+    ]
+  },
+  "transformation": {
+    "changed_models": [],
+    "unapproved_definitions": [],
+    "manifest_sha256": null
+  },
+  "privacy": {
+    "public_models": [
+      "gold_public_sales_dashboard"
+    ],
+    "forbidden_columns": [],
+    "detected_forbidden_columns": []
+  },
+  "quality": {
+    "status": "NOT_EVALUATED",
+    "total_tests": 0,
+    "failed_tests": 0,
+    "critical_failures": []
+  },
+  "freshness": {
+    "status": "NOT_EVALUATED",
+    "sources": []
+  },
+  "runtime": {
+    "pipeline_status": "NOT_RUN",
+    "canonical_unchanged": true,
+    "isolated_output_tables": 0,
+    "athena_failed_queries": 0
+  }
+}
