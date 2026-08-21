@@ -160,7 +160,7 @@ jobs:
 
           echo "C2 primary remediation execution"
 
-          python3 scripts/remediation/run_c2_remediation.py \
+          python3 scripts/remediation/execute_c2_remediation.py \
             --scenario "${C2_SCENARIO}" \
             --expected-commit "${EXPECTED_COMMIT}"
 
