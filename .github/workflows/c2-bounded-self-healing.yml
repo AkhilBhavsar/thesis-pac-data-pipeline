@@ -90,6 +90,34 @@ jobs:
           python-version: "3.11.14"
 
 
+      - name: Install pinned C2 Python toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 -m pip install             --disable-pip-version-check             "jsonschema==4.26.0"
+
+          python3 -m pip install             --disable-pip-version-check             -e orchestration/dagster
+
+          python3 - <<'PY'
+          import importlib.metadata
+
+          version = importlib.metadata.version("jsonschema")
+
+          if version != "4.26.0":
+              raise SystemExit(
+                  f"Unexpected jsonschema version: {version}"
+              )
+
+          print(
+              "Pinned C2 Python toolchain: PASS "
+              f"(jsonschema={version})"
+          )
+          PY
+
+          python3 -m pip check
+
+
       - name: Install OPA 1.19.0
         shell: bash
         run: |
@@ -163,19 +191,46 @@ jobs:
           github-token: ${{ github.token }}
 
 
-      - name: Prepare C1 policy input
+      - name: Prepare deterministic C1 policy input
         shell: bash
+        env:
+          C2_SCENARIO: ${{ inputs.scenario }}
         run: |
           set -euo pipefail
 
-          POLICY_DECISION=$(find c2-runtime/input -name "*.json" | grep policy | head -1)
+          case "${C2_SCENARIO}" in
+            schema_break|pii_exposure|policy_false_positive)
+              DECISION_NAME="policy-decision-pre.json"
+              EXPECTED_STAGE="pre"
+              ;;
+            freshness_breach|quality_regression)
+              DECISION_NAME="policy-decision-post.json"
+              EXPECTED_STAGE="post"
+              ;;
+            *)
+              echo "Unsupported C2 scenario: ${C2_SCENARIO}"
+              exit 1
+              ;;
+          esac
 
-          test -n "${POLICY_DECISION}"
+          POLICY_DECISION="$(
+            find c2-runtime/input               -type f               -name "${DECISION_NAME}"               -print               -quit
+          )"
 
-          cp "${POLICY_DECISION}" \
-             c2-runtime/input/policy-decision.json
+          if [ -z "${POLICY_DECISION}" ]; then
+            echo "Expected C1 decision not found: ${DECISION_NAME}"
+            echo "Downloaded C1 artifact contents:"
+            find c2-runtime/input -type f -print | sort
+            exit 1
+          fi
 
-          echo "C1 policy input: PASS"
+          cp "${POLICY_DECISION}"             c2-runtime/input/policy-decision.json
+
+          test -s c2-runtime/input/policy-decision.json
+
+          echo "C1 policy decision source: ${POLICY_DECISION}"
+          echo "C1 expected evaluation stage: ${EXPECTED_STAGE}"
+          echo "C1 deterministic policy input: PASS"
 
 
       - name: Initialise C2 wrapper environment
@@ -247,10 +302,12 @@ jobs:
 
 
       - name: Upload C2 evidence artifact
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7.0.0
         with:
           name: c2-bounded-self-healing-${{ github.run_id }}-${{ github.run_attempt }}
           path: c2-runtime/evidence
+          if-no-files-found: warn
 
 
       - name: Record C2 summary
