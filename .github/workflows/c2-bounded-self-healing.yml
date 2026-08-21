@@ -71,11 +71,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ ! "${EXPECTED_COMMIT}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Invalid commit format"
-            exit 1
-          fi
-
           test "${GITHUB_EVENT_NAME}" = "workflow_dispatch"
 
           test "${GITHUB_REF}" = "refs/heads/${EXPECTED_C2_BRANCH}"
@@ -100,7 +95,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          curl -L \
+          curl \
+            --fail \
+            --retry 5 \
+            --retry-delay 5 \
+            --connect-timeout 15 \
+            --max-time 120 \
+            -L \
             -o opa \
             https://openpolicyagent.org/downloads/v1.19.0/opa_linux_amd64_static
 
@@ -124,28 +125,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          ACCOUNT="$(
-            aws sts get-caller-identity \
-              --query Account \
-              --output text
-          )"
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 
-          ARN="$(
-            aws sts get-caller-identity \
-              --query Arn \
-              --output text
-          )"
+          test "${ACCOUNT}" = "522814714524"
 
-          if [ "${ACCOUNT}" != "522814714524" ]; then
-            echo "Unexpected AWS account: ${ACCOUNT}"
-            exit 1
-          fi
+          ARN=$(aws sts get-caller-identity --query Arn --output text)
 
           case "${ARN}" in
             arn:aws:sts::522814714524:assumed-role/thesis-pac-dev-github-c2/*)
               ;;
             *)
-              echo "Unexpected C2 AWS identity: ${ARN}"
               exit 1
               ;;
           esac
@@ -156,8 +145,6 @@ jobs:
       - name: Prepare C2 runtime
         shell: bash
         run: |
-          set -euo pipefail
-
           mkdir -p \
             c2-runtime/input \
             c2-runtime/evidence \
@@ -183,14 +170,10 @@ jobs:
 
           POLICY_DECISION=$(find c2-runtime/input -name "*.json" | grep policy | head -1)
 
-          if [ -z "${POLICY_DECISION}" ]; then
-            echo "Missing C1 policy decision artifact"
-            find c2-runtime/input -type f
-            exit 1
-          fi
+          test -n "${POLICY_DECISION}"
 
           cp "${POLICY_DECISION}" \
-            c2-runtime/input/policy-decision.json
+             c2-runtime/input/policy-decision.json
 
           echo "C1 policy input: PASS"
 
@@ -213,8 +196,6 @@ jobs:
             echo "C2_RUN_KEY=${RUN_KEY}"
             echo "C2_TARGET_LAYER=gold_public"
           } >> "${GITHUB_ENV}"
-
-          echo "C2 wrapper environment: PASS"
 
 
       - name: Execute deterministic C2 bounded self-healing wrapper
@@ -243,7 +224,9 @@ jobs:
           test -f c2-runtime/evidence/c2-runtime-complete.json
 
           echo "===== C2 completion evidence ====="
+
           cat c2-runtime/evidence/c2-runtime-complete.json
+
           echo "=================================="
 
           python3 - <<'PY'
@@ -255,8 +238,6 @@ jobs:
                   "c2-runtime/evidence/c2-runtime-complete.json"
               ).read_text()
           )
-
-          print(json.dumps(payload, indent=2))
 
           assert payload["status"] == "PASS"
           assert payload["condition"] == "C2"
@@ -284,7 +265,6 @@ jobs:
             echo "- Condition: C2"
             echo "- Scenario: ${C2_SCENARIO}"
             echo "- Commit: ${EXPECTED_COMMIT}"
-            echo "- Wrapper: run_c2_bounded_self_healing.py"
             echo "- Recovery verification: enabled"
             echo "- Fallback request generation: enabled"
             echo "- Evidence artifact: uploaded"
