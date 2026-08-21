@@ -170,6 +170,9 @@ jobs:
         with:
           name: c1-policy-gated-${{ inputs.c1_run_id }}-${{ inputs.c1_run_attempt }}
           path: c2-runtime/input
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.c1_run_id }}
+          github-token: ${{ github.token }}
 
 
       - name: Prepare C1 policy input
