@@ -1,4 +1,4 @@
-name: C2 Bounded Self-Healing Pipeline
+name: C2 Bounded Self-Healing Pipeline v1
 
 run-name: "C2 | ${{ inputs.scenario }} | bounded-self-healing | run-${{ github.run_number }}-${{ github.run_attempt }}"
 
