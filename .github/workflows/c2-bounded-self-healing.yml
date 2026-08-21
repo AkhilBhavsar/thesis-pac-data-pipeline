@@ -21,6 +21,16 @@ on:
         required: true
         type: string
 
+      c1_run_id:
+        description: "C1 workflow run ID containing policy evidence artifact"
+        required: true
+        type: string
+
+      c1_run_attempt:
+        description: "C1 workflow run attempt number"
+        required: true
+        type: string
+
 permissions:
   contents: read
   id-token: write
@@ -145,24 +155,105 @@ jobs:
           echo "Dedicated C2 AWS identity: PASS"
 
 
-      - name: Run C2 primary remediation executor
-        id: c2-remediation
+      - name: Prepare C2 runtime directories
         shell: bash
-        env:
-          C2_SCENARIO: ${{ inputs.scenario }}
-          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
-          THESIS_GIT_BRANCH: ${{ github.ref_name }}
-          THESIS_GIT_COMMIT: ${{ github.sha }}
-          THESIS_EXPERIMENT_CONDITION: C2
-          C2_RUN_KEY: c2-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
 
-          echo "C2 primary remediation execution"
+          mkdir -p \
+            c2-runtime/input \
+            c2-runtime/decision \
+            c2-runtime/plan \
+            c2-runtime/context \
+            c2-runtime/workspace \
+            c2-runtime/results \
+            c2-runtime/evidence
+
+          echo "C2 runtime directories prepared: PASS"
+
+
+      - name: Download C1 policy evidence artifact
+        uses: actions/download-artifact@v7.0.0
+        with:
+          name: c1-policy-gated-${{ inputs.c1_run_id }}-${{ inputs.c1_run_attempt }}
+          path: c2-runtime/input
+
+
+      - name: Prepare C1 policy decision input
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          POLICY_DECISION=$(find c2-runtime/input -name "*.json" | grep "policy" | head -1)
+
+          if [ -z "${POLICY_DECISION}" ]; then
+            echo "No C1 policy decision artifact found"
+            find c2-runtime/input -type f
+            exit 1
+          fi
+
+          cp "${POLICY_DECISION}" c2-runtime/input/policy-decision.json
+
+          echo "C1 policy decision input available: PASS"
+
+
+      - name: Build C2 policy decision projection
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 scripts/policy/build_c2_policy_decision.py \
+            --decision c2-runtime/input/policy-decision.json \
+            --catalog policies/catalog/c2-remediation-catalog.json \
+            --schema policies/contracts/c2-policy-decision-projection.schema.json \
+            --output c2-runtime/decision/c2-policy-decision.json
+
+          echo "C2 policy decision projection: PASS"
+
+
+      - name: Build deterministic C2 remediation plan
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 scripts/policy/build_c2_remediation_plan.py \
+            --decision c2-runtime/decision/c2-policy-decision.json \
+            --catalog policies/catalog/c2-remediation-catalog.json \
+            --schema policies/contracts/c2-remediation-plan.schema.json \
+            --output c2-runtime/plan/remediation-plan.json
+
+          echo "C2 remediation plan: PASS"
+
+
+      - name: Build isolated C2 execution context
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 scripts/remediation/build_c2_execution_context.py \
+            --plan c2-runtime/plan/remediation-plan.json \
+            --schema policies/contracts/c2-remediation-execution-context.schema.json \
+            --workspace-root c2-runtime/workspace \
+            --context-output c2-runtime/context/execution-context.json \
+            --preparation-output c2-runtime/context/preparation.json
+
+          echo "C2 execution context: PASS"
+
+
+      - name: Execute bounded C2 remediation
+        shell: bash
+        run: |
+          set -euo pipefail
 
           python3 scripts/remediation/execute_c2_remediation.py \
-            --scenario "${C2_SCENARIO}" \
-            --expected-commit "${EXPECTED_COMMIT}"
+            --plan c2-runtime/plan/remediation-plan.json \
+            --context c2-runtime/context/execution-context.json \
+            --plan-schema policies/contracts/c2-remediation-plan.schema.json \
+            --context-schema policies/contracts/c2-remediation-execution-context.schema.json \
+            --result-schema policies/contracts/c2-remediation-result.schema.json \
+            --workspace-root c2-runtime/workspace \
+            --result-output c2-runtime/results/remediation-result.json \
+            --details-output c2-runtime/results/remediation-details.json
 
           echo "C2 remediation execution: PASS"
 
