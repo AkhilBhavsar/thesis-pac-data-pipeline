@@ -1,0 +1,188 @@
+name: C2 Bounded Self-Healing Pipeline
+
+run-name: "C2 | ${{ inputs.scenario }} | bounded-self-healing | run-${{ github.run_number }}-${{ github.run_attempt }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: "Controlled C2 fault scenario"
+        required: true
+        type: choice
+        options:
+          - schema_break
+          - pii_exposure
+          - freshness_breach
+          - quality_regression
+          - policy_false_positive
+
+      expected_commit:
+        description: "Exact 40-character C2 Git commit to execute"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: eu-west-1
+  EXPECTED_C2_BRANCH: feature/c2-bounded-self-healing
+  C2_GITHUB_ROLE_ARN: arn:aws:iam::522814714524:role/thesis-pac-dev-github-c2
+
+jobs:
+  c2-foundation:
+    name: "C2 foundation | ${{ inputs.scenario }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout locked C2 revision
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.expected_commit }}
+          fetch-depth: 0
+
+      - name: Guard manual C2 branch and immutable revision
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          TRIGGER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "${EXPECTED_COMMIT}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Expected commit must be exactly 40 lowercase hexadecimal characters."
+            exit 1
+          fi
+
+          if [ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" ]; then
+            echo "C2 workflow must be invoked manually."
+            exit 1
+          fi
+
+          if [ "${GITHUB_REF}" != "refs/heads/${EXPECTED_C2_BRANCH}" ]; then
+            echo "C2 workflow may execute only from ${EXPECTED_C2_BRANCH}."
+            exit 1
+          fi
+
+          if [ "${TRIGGER_SHA}" != "${EXPECTED_COMMIT}" ]; then
+            echo "workflow_dispatch branch tip does not equal expected immutable commit."
+            exit 1
+          fi
+
+          ACTUAL_COMMIT="$(git rev-parse HEAD)"
+
+          if [ "${ACTUAL_COMMIT}" != "${EXPECTED_COMMIT}" ]; then
+            echo "Checked-out revision does not equal expected immutable commit."
+            exit 1
+          fi
+
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Repository must be clean after checkout."
+            git status --short
+            exit 1
+          fi
+
+          echo "C2 immutable revision guard: PASS"
+
+      - name: Set up Python 3.11.14
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.11.14"
+
+      - name: Record C2 foundation identity
+        shell: bash
+        env:
+          C2_SCENARIO: ${{ inputs.scenario }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+
+          python --version
+
+          echo "Condition: C2"
+          echo "Scenario: ${C2_SCENARIO}"
+          echo "Commit: ${EXPECTED_COMMIT}"
+          echo "Primary remediation plane: GitHub runner"
+          echo "Fallback plane: AWS Step Functions after recovery-verification failure"
+          echo "Direct Lambda invocation: forbidden"
+
+      - name: Assume dedicated C2 role through GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          role-to-assume: ${{ env.C2_GITHUB_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: thesis-pac-c2-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Verify dedicated C2 AWS identity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ACCOUNT="$(
+            aws sts get-caller-identity               --query Account               --output text
+          )"
+
+          ARN="$(
+            aws sts get-caller-identity               --query Arn               --output text
+          )"
+
+          if [ "${ACCOUNT}" != "522814714524" ]; then
+            echo "Unexpected AWS account: ${ACCOUNT}"
+            exit 1
+          fi
+
+          case "${ARN}" in
+            arn:aws:sts::522814714524:assumed-role/thesis-pac-dev-github-c2/*)
+              ;;
+            *)
+              echo "Unexpected C2 AWS identity: ${ARN}"
+              exit 1
+              ;;
+          esac
+
+          echo "Dedicated C2 AWS identity: PASS"
+
+
+      - name: Run C2 primary remediation executor
+        id: c2-remediation
+        shell: bash
+        env:
+          C2_SCENARIO: ${{ inputs.scenario }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          THESIS_GIT_BRANCH: ${{ github.ref_name }}
+          THESIS_GIT_COMMIT: ${{ github.sha }}
+          THESIS_EXPERIMENT_CONDITION: C2
+          C2_RUN_KEY: c2-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+
+          echo "C2 primary remediation execution"
+
+          python3 scripts/remediation/run_c2_remediation.py \
+            --scenario "${C2_SCENARIO}" \
+            --expected-commit "${EXPECTED_COMMIT}"
+
+          echo "C2 remediation execution: PASS"
+
+      - name: Record C2 workflow foundation summary
+        shell: bash
+        env:
+          C2_SCENARIO: ${{ inputs.scenario }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "## C2 bounded self-healing workflow foundation"
+            echo
+            echo "- Condition: C2"
+            echo "- Scenario: ${C2_SCENARIO}"
+            echo "- Commit: ${EXPECTED_COMMIT}"
+            echo "- Trigger: workflow_dispatch only"
+            echo "- Primary remediation: GitHub runner"
+            echo "- AWS fallback execution: not wired in this foundation checkpoint"
+            echo "- Direct Lambda invocation: forbidden"
+            echo "- Authoritative experiment: no"
+          } >> "${GITHUB_STEP_SUMMARY}"
