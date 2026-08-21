@@ -8,6 +8,7 @@ This wrapper orchestrates already validated C2 components:
 - execution context preparation
 - bounded remediation execution
 - recovery verification
+- fallback request preparation
 
 No direct canonical data mutation is permitted.
 """
@@ -27,6 +28,14 @@ from typing import Any
 
 EXPECTED_BRANCH = "feature/c2-bounded-self-healing"
 EXPECTED_CONDITION = "C2"
+
+ALLOWED_SCENARIOS = {
+    "schema_break",
+    "pii_exposure",
+    "freshness_breach",
+    "quality_regression",
+    "policy_false_positive",
+}
 
 
 def utc_now() -> str:
@@ -87,6 +96,7 @@ def run_command(
     print(
         "Executing:",
         " ".join(command),
+        flush=True,
     )
 
     result = subprocess.run(
@@ -96,13 +106,22 @@ def run_command(
 
     if result.returncode != 0:
         raise RuntimeError(
-            f"Command failed: {command}"
+            "Command failed with exit code "
+            f"{result.returncode}: {' '.join(command)}"
         )
+
 
 def run_python_script(
     script: str,
     arguments: list[str],
 ) -> None:
+    script_path = Path(script)
+
+    if not script_path.is_file():
+        raise RuntimeError(
+            f"Required C2 component does not exist: {script}"
+        )
+
     command = [
         sys.executable,
         script,
@@ -110,6 +129,7 @@ def run_python_script(
     ]
 
     run_command(command)
+
 
 def validate_environment() -> dict[str, str]:
     branch = require_environment(
@@ -145,6 +165,33 @@ def validate_environment() -> dict[str, str]:
         raise RuntimeError(
             f"Unexpected condition: {condition}"
         )
+
+    if scenario not in ALLOWED_SCENARIOS:
+        raise RuntimeError(
+            f"Unexpected C2 scenario: {scenario}"
+        )
+
+    if (
+        len(commit) != 40
+        or any(
+            character not in "0123456789abcdef"
+            for character in commit
+        )
+    ):
+        raise RuntimeError(
+            f"Invalid C2 Git commit: {commit}"
+        )
+
+    if not run_key:
+        raise RuntimeError(
+            "C2 run key must not be empty"
+        )
+
+    if not target_layer:
+        raise RuntimeError(
+            "C2 target layer must not be empty"
+        )
+
     return {
         "branch": branch,
         "condition": condition,
@@ -205,6 +252,7 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
+
 def build_c2_decision(
     *,
     decision: str,
@@ -225,6 +273,7 @@ def build_c2_decision(
             output,
         ],
     )
+
 
 def build_c2_plan(
     *,
@@ -272,6 +321,7 @@ def build_c2_context(
         ],
     )
 
+
 def execute_c2_remediation(
     *,
     plan: str,
@@ -304,6 +354,7 @@ def execute_c2_remediation(
             details_output,
         ],
     )
+
 
 def verify_c2_recovery(
     *,
@@ -341,6 +392,7 @@ def verify_c2_recovery(
         ],
     )
 
+
 def build_c2_fallback_request(
     *,
     plan: str,
@@ -368,6 +420,7 @@ def build_c2_fallback_request(
         ],
     )
 
+
 def main() -> int:
     args = parse_args()
 
@@ -382,14 +435,25 @@ def main() -> int:
         exist_ok=True,
     )
 
+    print(
+        "C2 evidence root:",
+        evidence_root.resolve(),
+        flush=True,
+    )
+
     runtime = {
         "timestamp": utc_now(),
         "environment": environment,
         "condition": "C2",
     }
 
+    runtime_start_output = (
+        evidence_root
+        / "c2-runtime-start.json"
+    )
+
     write_json(
-        evidence_root / "c2-runtime-start.json",
+        runtime_start_output,
         runtime,
     )
 
@@ -443,11 +507,26 @@ def main() -> int:
         / "fallback-request.json"
     )
 
+    completion_output = (
+        evidence_root
+        / "c2-runtime-complete.json"
+    )
+
+    print(
+        "C2 stage: policy decision projection",
+        flush=True,
+    )
+
     build_c2_decision(
         decision=args.decision,
         catalog=args.catalog,
         schema=args.decision_schema,
         output=str(decision_output),
+    )
+
+    print(
+        "C2 stage: remediation planning",
+        flush=True,
     )
 
     build_c2_plan(
@@ -457,12 +536,22 @@ def main() -> int:
         output=str(plan_output),
     )
 
+    print(
+        "C2 stage: execution context preparation",
+        flush=True,
+    )
+
     build_c2_context(
         plan=str(plan_output),
         schema=args.context_schema,
         workspace_root=str(workspace_root),
         context_output=str(context_output),
         preparation_output=str(preparation_output),
+    )
+
+    print(
+        "C2 stage: bounded remediation execution",
+        flush=True,
     )
 
     execute_c2_remediation(
@@ -474,6 +563,11 @@ def main() -> int:
         workspace_root=str(workspace_root),
         result_output=str(result_output),
         details_output=str(details_output),
+    )
+
+    print(
+        "C2 stage: recovery verification",
+        flush=True,
     )
 
     verify_c2_recovery(
@@ -488,6 +582,11 @@ def main() -> int:
         verified_result_output=str(verified_result_output),
     )
 
+    print(
+        "C2 stage: fallback request preparation",
+        flush=True,
+    )
+
     build_c2_fallback_request(
         plan=str(plan_output),
         result=str(result_output),
@@ -500,20 +599,70 @@ def main() -> int:
         output=str(fallback_output),
     )
 
+    completion_payload = {
+        "status": "PASS",
+        "condition": "C2",
+        "scenario_id": environment["scenario"],
+        "run_key": environment["run_key"],
+        "git_branch": environment["branch"],
+        "git_commit": environment["commit"],
+        "decision": str(decision_output),
+        "plan": str(plan_output),
+        "result": str(result_output),
+        "verification": str(verification_output),
+        "fallback_request": str(fallback_output),
+        "completed_at_utc": utc_now(),
+    }
+
     write_json(
-        evidence_root / "c2-runtime-complete.json",
-        {
-            "status": "PASS",
-            "condition": "C2",
-            "decision": str(decision_output),
-            "plan": str(plan_output),
-            "result": str(result_output),
-            "verification": str(verification_output),
-        },
+        completion_output,
+        completion_payload,
+    )
+
+    if not completion_output.is_file():
+        raise RuntimeError(
+            "C2 completion evidence was not created: "
+            f"{completion_output}"
+        )
+
+    completion_check = json.loads(
+        completion_output.read_text(
+            encoding="utf-8"
+        )
+    )
+
+    if completion_check.get("status") != "PASS":
+        raise RuntimeError(
+            "C2 completion evidence status is not PASS"
+        )
+
+    if completion_check.get("condition") != "C2":
+        raise RuntimeError(
+            "C2 completion evidence condition is not C2"
+        )
+
+    print(
+        "C2 completion evidence created:",
+        completion_output,
+        flush=True,
     )
 
     print(
-        "C2 bounded self-healing orchestration: PASS"
+        "C2 bounded self-healing orchestration: PASS",
+        flush=True,
     )
 
     return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        print(
+            "C2 bounded self-healing orchestration: FAIL:",
+            str(exc),
+            file=sys.stderr,
+            flush=True,
+        )
+        raise
