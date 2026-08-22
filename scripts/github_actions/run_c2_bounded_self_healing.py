@@ -449,6 +449,174 @@ def build_c2_plan(
     )
 
 
+def prepare_context_fixtures(
+    *,
+    plan_payload: dict[str, Any],
+    workspace_root: str,
+) -> list[str]:
+    action = plan_payload.get(
+        "plan",
+        {},
+    ).get(
+        "primary_action"
+    )
+
+    scenario = plan_payload.get(
+        "scenario_id"
+    )
+
+    if not isinstance(
+        scenario,
+        str,
+    ) or not scenario:
+        raise RuntimeError(
+            "C2 plan is missing scenario_id."
+        )
+
+    if action not in {
+        "rollback",
+        "redact_republish",
+    }:
+        return []
+
+    workspace = Path(
+        workspace_root
+    )
+
+    fixture_root = (
+        workspace.parent
+        / "fixtures"
+    )
+
+    if fixture_root.exists():
+        raise RuntimeError(
+            "C2 fixture directory must not "
+            "already exist."
+        )
+
+    fixture_root.mkdir(
+        parents=True,
+        exist_ok=False,
+    )
+
+    common = {
+        "schema_version": "1.0.0",
+        "condition": "C2",
+        "scenario_id": scenario,
+        "synthetic_fixture": True,
+        "canonical_data": False,
+    }
+
+    fixture_arguments: list[str]
+    fixture_files: dict[str, Path]
+
+    if action == "rollback":
+        candidate = (
+            fixture_root
+            / "candidate.json"
+        )
+        verified = (
+            fixture_root
+            / "verified.json"
+        )
+
+        write_json(
+            candidate,
+            {
+                **common,
+                "fixture_role": "candidate",
+                "trusted": False,
+                "state": "faulted_candidate",
+            },
+        )
+        write_json(
+            verified,
+            {
+                **common,
+                "fixture_role": "verified_source",
+                "trusted": True,
+                "state": "verified_safe",
+            },
+        )
+
+        fixture_arguments = [
+            "--candidate-source",
+            str(candidate),
+            "--verified-source",
+            str(verified),
+        ]
+        fixture_files = {
+            "candidate": candidate,
+            "verified_source": verified,
+        }
+
+    else:
+        candidate = (
+            fixture_root
+            / "candidate.json"
+        )
+        sanitized = (
+            fixture_root
+            / "sanitized.json"
+        )
+
+        write_json(
+            candidate,
+            {
+                **common,
+                "fixture_role": "candidate",
+                "trusted": False,
+                "state": "pii_exposed",
+                "synthetic_email": (
+                    "c2-fixture@example.invalid"
+                ),
+            },
+        )
+        write_json(
+            sanitized,
+            {
+                **common,
+                "fixture_role": "sanitized_source",
+                "trusted": True,
+                "state": "redacted_safe",
+                "synthetic_email": "[REDACTED]",
+            },
+        )
+
+        fixture_arguments = [
+            "--candidate-source",
+            str(candidate),
+            "--sanitized-source",
+            str(sanitized),
+        ]
+        fixture_files = {
+            "candidate": candidate,
+            "sanitized_source": sanitized,
+        }
+
+    write_json(
+        fixture_root
+        / "fixture-manifest.json",
+        {
+            **common,
+            "action": action,
+            "isolated": True,
+            "files": {
+                role: {
+                    "path": path.name,
+                    "sha256": sha256_file(
+                        path
+                    ),
+                }
+                for role, path
+                in fixture_files.items()
+            },
+        },
+    )
+
+    return fixture_arguments
+
+
 def build_c2_context(
     *,
     plan: str,
@@ -486,6 +654,13 @@ def build_c2_context(
         "--preparation-output",
         preparation_output,
     ]
+
+    command.extend(
+        prepare_context_fixtures(
+            plan_payload=plan_payload,
+            workspace_root=workspace_root,
+        )
+    )
 
     if reason:
         command.extend(
