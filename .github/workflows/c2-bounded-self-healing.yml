@@ -228,7 +228,31 @@ jobs:
 
           test -s c2-runtime/input/policy-decision.json
 
+          PRE_GATE_EVIDENCE="$(
+            find c2-runtime/input \
+              -type f \
+              -name 'pre-gate-evidence.json' \
+              -print \
+              -quit
+          )"
+
+          if [ -z "${PRE_GATE_EVIDENCE}" ]; then
+            echo "Required C1 pre-gate evidence was not downloaded."
+            find c2-runtime/input -type f -print | sort
+            exit 1
+          fi
+
+          if [ "${PRE_GATE_EVIDENCE}" != \
+            "c2-runtime/input/pre-gate-evidence.json" ]
+          then
+            cp "${PRE_GATE_EVIDENCE}" \
+              c2-runtime/input/pre-gate-evidence.json
+          fi
+
+          test -s c2-runtime/input/pre-gate-evidence.json
+
           echo "C1 policy decision source: ${POLICY_DECISION}"
+          echo "C1 pre-gate evidence source: ${PRE_GATE_EVIDENCE}"
           echo "C1 expected evaluation stage: ${EXPECTED_STAGE}"
           echo "C1 deterministic policy input: PASS"
 
@@ -265,6 +289,7 @@ jobs:
             --plan-schema policies/contracts/c2-remediation-plan.schema.json \
             --context-schema policies/contracts/c2-remediation-execution-context.schema.json \
             --result-schema policies/contracts/c2-remediation-result.schema.json \
+            --pre-evidence c2-runtime/input/pre-gate-evidence.json \
             --opa-bin opa \
             --evidence-root c2-runtime/evidence
 

@@ -29,6 +29,14 @@ from typing import Any
 EXPECTED_BRANCH = "feature/c2-bounded-self-healing"
 EXPECTED_CONDITION = "C2"
 
+VERIFICATION_PASS_EXIT_CODE = 0
+VERIFICATION_CONTROLLED_EXIT_CODE = 2
+
+CONTROLLED_VERIFICATION_STATUSES = {
+    "FAIL",
+    "MANUAL_REQUIRED",
+}
+
 ALLOWED_SCENARIOS = {
     "schema_break",
     "pii_exposure",
@@ -92,7 +100,9 @@ def sha256_file(
 
 def run_command(
     command: list[str],
-) -> None:
+    *,
+    allowed_returncodes: tuple[int, ...] = (0,),
+) -> int:
     print(
         "Executing:",
         " ".join(command),
@@ -104,17 +114,21 @@ def run_command(
         check=False,
     )
 
-    if result.returncode != 0:
+    if result.returncode not in allowed_returncodes:
         raise RuntimeError(
             "Command failed with exit code "
             f"{result.returncode}: {' '.join(command)}"
         )
 
+    return result.returncode
+
 
 def run_python_script(
     script: str,
     arguments: list[str],
-) -> None:
+    *,
+    allowed_returncodes: tuple[int, ...] = (0,),
+) -> int:
     script_path = Path(script)
 
     if not script_path.is_file():
@@ -128,7 +142,140 @@ def run_python_script(
         *arguments,
     ]
 
-    run_command(command)
+    return run_command(
+        command,
+        allowed_returncodes=(
+            allowed_returncodes
+        ),
+    )
+
+
+def load_json_object(
+    path: Path,
+    *,
+    label: str,
+) -> dict[str, Any]:
+    try:
+        payload = json.loads(
+            path.read_text(
+                encoding="utf-8"
+            )
+        )
+    except FileNotFoundError as error:
+        raise RuntimeError(
+            f"{label} was not created: {path}"
+        ) from error
+    except json.JSONDecodeError as error:
+        raise RuntimeError(
+            f"{label} is invalid JSON: {path}"
+        ) from error
+
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"{label} must be a JSON object: {path}"
+        )
+
+    return payload
+
+
+def validate_verification_outcome(
+    *,
+    returncode: int,
+    verification_output: Path,
+    verified_result_output: Path,
+) -> dict[str, Any]:
+    artifact = load_json_object(
+        verification_output,
+        label="C2 recovery verification",
+    )
+
+    verification_status = artifact.get(
+        "verification_status"
+    )
+
+    if verification_status == "PASS":
+        expected_returncode = (
+            VERIFICATION_PASS_EXIT_CODE
+        )
+
+        if artifact.get(
+            "verified_result_emitted"
+        ) is not True:
+            raise RuntimeError(
+                "PASS verification did not declare "
+                "a verified result."
+            )
+
+        if not verified_result_output.is_file():
+            raise RuntimeError(
+                "PASS verification did not create "
+                "the verified-result artifact."
+            )
+
+        if artifact.get(
+            "promotion_blocked"
+        ) is not False:
+            raise RuntimeError(
+                "PASS verification must release "
+                "the promotion block."
+            )
+
+    elif verification_status in (
+        CONTROLLED_VERIFICATION_STATUSES
+    ):
+        expected_returncode = (
+            VERIFICATION_CONTROLLED_EXIT_CODE
+        )
+
+        if artifact.get(
+            "verified_result_emitted"
+        ) is not False:
+            raise RuntimeError(
+                "Controlled non-PASS verification "
+                "declared a verified result."
+            )
+
+        if verified_result_output.exists():
+            raise RuntimeError(
+                "Controlled non-PASS verification "
+                "created an unexpected verified result."
+            )
+
+        if artifact.get(
+            "promotion_blocked"
+        ) is not True:
+            raise RuntimeError(
+                "Controlled non-PASS verification "
+                "must keep promotion blocked."
+            )
+
+        fallback = artifact.get(
+            "recommended_fallback_action"
+        )
+
+        if (
+            not isinstance(fallback, str)
+            or not fallback
+        ):
+            raise RuntimeError(
+                "Controlled non-PASS verification "
+                "requires a fallback action."
+            )
+
+    else:
+        raise RuntimeError(
+            "Unexpected C2 verification status: "
+            f"{verification_status!r}"
+        )
+
+    if returncode != expected_returncode:
+        raise RuntimeError(
+            "C2 verifier exit/status mismatch: "
+            f"exit={returncode}, "
+            f"status={verification_status}"
+        )
+
+    return artifact
 
 
 def validate_environment() -> dict[str, str]:
@@ -241,6 +388,11 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--pre-evidence",
+        required=True,
+    )
+
+    parser.add_argument(
         "--opa-bin",
         required=True,
     )
@@ -305,20 +457,47 @@ def build_c2_context(
     context_output: str,
     preparation_output: str,
 ) -> None:
+    import json
+
+    plan_payload = json.loads(
+        Path(plan).read_text()
+    )
+
+    reason = None
+
+    if (
+        plan_payload.get("plan", {}).get("mode")
+        == "manual"
+    ):
+        reason = (
+            "Manual control required: "
+            f"{plan_payload['plan']['primary_action']}"
+        )
+
+    command = [
+        "--plan",
+        plan,
+        "--schema",
+        schema,
+        "--workspace-root",
+        workspace_root,
+        "--context-output",
+        context_output,
+        "--preparation-output",
+        preparation_output,
+    ]
+
+    if reason:
+        command.extend(
+            [
+                "--reason",
+                reason,
+            ]
+        )
+
     run_python_script(
         "scripts/remediation/build_c2_execution_context.py",
-        [
-            "--plan",
-            plan,
-            "--schema",
-            schema,
-            "--workspace-root",
-            workspace_root,
-            "--context-output",
-            context_output,
-            "--preparation-output",
-            preparation_output,
-        ],
+        command,
     )
 
 
@@ -387,8 +566,8 @@ def verify_c2_recovery(
     target_layer: str,
     verification_output: str,
     verified_result_output: str,
-) -> None:
-    run_python_script(
+) -> int:
+    return run_python_script(
         "scripts/remediation/verify_c2_recovery.py",
         [
             "--plan",
@@ -410,6 +589,10 @@ def verify_c2_recovery(
             "--verified-result-output",
             verified_result_output,
         ],
+        allowed_returncodes=(
+            VERIFICATION_PASS_EXIT_CODE,
+            VERIFICATION_CONTROLLED_EXIT_CODE,
+        ),
     )
 
 
@@ -598,10 +781,7 @@ def main() -> int:
     build_c2_recovery_evidence(
         result=str(result_output),
         details=str(details_output),
-        pre_evidence=str(
-            evidence_root
-            / "pre-gate-evidence.json"
-        ),
+        pre_evidence=args.pre_evidence,
         output=str(
             recovery_evidence_output
         ),
@@ -613,7 +793,7 @@ def main() -> int:
         flush=True,
     )
 
-    verify_c2_recovery(
+    verification_returncode = verify_c2_recovery(
         plan=str(plan_output),
         result=str(result_output),
         evidence=str(
@@ -625,6 +805,20 @@ def main() -> int:
         target_layer=environment["target_layer"],
         verification_output=str(verification_output),
         verified_result_output=str(verified_result_output),
+    )
+
+    verification_artifact = (
+        validate_verification_outcome(
+            returncode=(
+                verification_returncode
+            ),
+            verification_output=(
+                verification_output
+            ),
+            verified_result_output=(
+                verified_result_output
+            ),
+        )
     )
 
     print(
@@ -658,6 +852,29 @@ def main() -> int:
             recovery_evidence_output
         ),
         "verification": str(verification_output),
+        "verification_status": (
+            verification_artifact[
+                "verification_status"
+            ]
+        ),
+        "verification_exit_code": (
+            verification_returncode
+        ),
+        "promotion_blocked": (
+            verification_artifact[
+                "promotion_blocked"
+            ]
+        ),
+        "recommended_fallback_action": (
+            verification_artifact[
+                "recommended_fallback_action"
+            ]
+        ),
+        "verified_result": (
+            str(verified_result_output)
+            if verified_result_output.is_file()
+            else None
+        ),
         "fallback_request": str(fallback_output),
         "completed_at_utc": utc_now(),
     }
