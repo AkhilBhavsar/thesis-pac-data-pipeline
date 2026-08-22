@@ -355,6 +355,26 @@ def execute_c2_remediation(
         ],
     )
 
+def build_c2_recovery_evidence(
+    *,
+    result: str,
+    details: str,
+    pre_evidence: str,
+    output: str,
+) -> None:
+    run_python_script(
+        "scripts/remediation/build_c2_recovery_evidence.py",
+        [
+            "--result",
+            result,
+            "--details",
+            details,
+            "--pre-evidence",
+            pre_evidence,
+            "--output",
+            output,
+        ],
+    )
 
 def verify_c2_recovery(
     *,
@@ -507,6 +527,11 @@ def main() -> int:
         / "fallback-request.json"
     )
 
+    recovery_evidence_output = (
+        evidence_root
+        / "recovery-evidence.json"
+    )
+
     completion_output = (
         evidence_root
         / "c2-runtime-complete.json"
@@ -566,6 +591,24 @@ def main() -> int:
     )
 
     print(
+        "C2 stage: recovery evidence preparation",
+        flush=True,
+    )
+
+    build_c2_recovery_evidence(
+        result=str(result_output),
+        details=str(details_output),
+        pre_evidence=str(
+            evidence_root
+            / "pre-gate-evidence.json"
+        ),
+        output=str(
+            recovery_evidence_output
+        ),
+    )
+
+
+    print(
         "C2 stage: recovery verification",
         flush=True,
     )
@@ -573,7 +616,9 @@ def main() -> int:
     verify_c2_recovery(
         plan=str(plan_output),
         result=str(result_output),
-        evidence=str(evidence_root),
+        evidence=str(
+            recovery_evidence_output
+        ),
         opa_bin=args.opa_bin,
         git_branch=environment["branch"],
         git_commit=environment["commit"],
@@ -609,6 +654,9 @@ def main() -> int:
         "decision": str(decision_output),
         "plan": str(plan_output),
         "result": str(result_output),
+        "recovery_evidence": str(
+            recovery_evidence_output
+        ),
         "verification": str(verification_output),
         "fallback_request": str(fallback_output),
         "completed_at_utc": utc_now(),
