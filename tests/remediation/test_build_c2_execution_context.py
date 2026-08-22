@@ -1,12 +1,16 @@
+import contextlib
 import hashlib
+import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.remediation.build_c2_execution_context import (
     ContextBuilderError,
     build_context,
+    main,
 )
 
 
@@ -352,6 +356,44 @@ class C2ExecutionContextBuilderTest(unittest.TestCase):
                     "c1-workspace"
                 ),
             )
+
+    def test_cli_error_path_emits_clean_error(self):
+        stderr = io.StringIO()
+
+        arguments = [
+            "build_c2_execution_context.py",
+            "--plan",
+            str(self.root / "missing-plan.json"),
+            "--schema",
+            str(self.root / "missing-schema.json"),
+            "--workspace-root",
+            str(self.workspace("cli-workspace")),
+            "--context-output",
+            str(self.root / "context.json"),
+            "--preparation-output",
+            str(self.root / "preparation.json"),
+        ]
+
+        with (
+            patch("sys.argv", arguments),
+            contextlib.redirect_stderr(stderr),
+        ):
+            exit_code = main()
+
+        self.assertEqual(
+            exit_code,
+            1,
+        )
+
+        self.assertIn(
+            "ERROR: JSON file does not exist",
+            stderr.getvalue(),
+        )
+
+        self.assertNotIn(
+            "NameError",
+            stderr.getvalue(),
+        )
 
 
 if __name__ == "__main__":
