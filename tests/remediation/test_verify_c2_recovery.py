@@ -331,6 +331,84 @@ def allow_evaluator(
     )
 
 
+def test_evaluate_opa_resolves_bare_command_from_path(
+    tmp_path,
+    monkeypatch,
+):
+    opa = tmp_path / "opa"
+
+    opa.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' "
+        "'{\"result\":[{\"expressions\":[{\"value\":"
+        "{\"allow\":true,\"violations\":[]}}]}]}'\n",
+        encoding="utf-8",
+    )
+
+    opa.chmod(0o755)
+
+    policy_dir = tmp_path / "rego"
+    policy_dir.mkdir()
+
+    (
+        policy_dir
+        / "allow.rego"
+    ).write_text(
+        "package thesis.pac\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv(
+        "PATH",
+        str(tmp_path),
+    )
+
+    allow, violations, evaluation_ms = (
+        verifier.evaluate_opa(
+            Path("opa"),
+            {"synthetic": True},
+            policy_dir,
+        )
+    )
+
+    assert allow is True
+    assert violations == []
+    assert evaluation_ms >= 0
+
+
+def test_evaluate_opa_rejects_unresolvable_command(
+    tmp_path,
+    monkeypatch,
+):
+    policy_dir = tmp_path / "rego"
+    policy_dir.mkdir()
+
+    (
+        policy_dir
+        / "allow.rego"
+    ).write_text(
+        "package thesis.pac\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv(
+        "PATH",
+        str(tmp_path),
+    )
+
+    with pytest.raises(
+        verifier.VerificationError,
+        match=(
+            "OPA executable cannot be resolved"
+        ),
+    ):
+        verifier.evaluate_opa(
+            Path("opa"),
+            {"synthetic": True},
+            policy_dir,
+        )
+
+
 def run(
     scenario_id: str,
     *,

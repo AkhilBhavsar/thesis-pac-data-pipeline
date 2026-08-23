@@ -6,6 +6,7 @@ import argparse
 import copy
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -288,9 +289,13 @@ def evaluate_opa(
     list[dict[str, Any]],
     float,
 ]:
-    if not opa_bin.is_file():
+    resolved_opa = shutil.which(
+        str(opa_bin)
+    )
+
+    if resolved_opa is None:
         raise VerificationError(
-            f"OPA binary does not exist: "
+            f"OPA executable cannot be resolved: "
             f"{opa_bin}"
         )
 
@@ -322,7 +327,7 @@ def evaluate_opa(
         )
 
         command = [
-            str(opa_bin),
+            resolved_opa,
             "eval",
             "--format=json",
         ]
