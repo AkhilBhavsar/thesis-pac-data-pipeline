@@ -226,6 +226,64 @@ class TestBuildC2FallbackRequest(
                 scenario
             ]
 
+        source_policy_id = {
+            "pii_exposure":
+                "PAC-PRIVACY-001",
+
+            "freshness_breach":
+                "PAC-FRESH-001",
+
+            "quality_regression":
+                "PAC-QUALITY-001",
+
+            "schema_break":
+                "PAC-SCHEMA-001",
+
+            "policy_false_positive":
+                "PAC-SCHEMA-001",
+        }[
+            scenario
+        ]
+
+        plan[
+            "source_policy_decision"
+        ] = {
+            "decision": "DENY",
+            "triggered_policy_ids": [
+                source_policy_id,
+                "PAC-RELEASE-001",
+            ],
+        }
+
+        plan_path.write_bytes(
+            canonical_bytes(
+                plan
+            )
+        )
+
+        result[
+            "source_remediation_plan_sha256"
+        ] = sha256(
+            plan_path
+        )
+
+        result_path.write_bytes(
+            canonical_bytes(
+                result
+            )
+        )
+
+        check_name = {
+            "PAC-PRIVACY-001": "privacy",
+            "PAC-FRESH-001": "freshness",
+            "PAC-QUALITY-001": "quality",
+            "PAC-RUNTIME-001": "runtime",
+            "PAC-RELEASE-001": "release_policy",
+        }.get(
+            policy_id,
+            "runtime",
+        )
+
         fallback = (
             recommended_fallback
             if recommended_fallback is not None
@@ -264,6 +322,19 @@ class TestBuildC2FallbackRequest(
             "triggered_policy_ids": [
                 policy_id,
                 "PAC-RELEASE-001",
+            ],
+
+            "check_results": [
+                {
+                    "check": check_name,
+                    "policy_id": policy_id,
+                    "status": "FAIL",
+                },
+                {
+                    "check": "release_policy",
+                    "policy_id": "PAC-RELEASE-001",
+                    "status": "FAIL",
+                },
             ],
 
             "violations": [
@@ -494,6 +565,53 @@ class TestBuildC2FallbackRequest(
             "PAC-FRESH-001",
         )
 
+        self.assertEqual(
+            request[
+                "violation_code"
+            ],
+            "PAC-FRESH-001",
+        )
+
+    def test_freshness_uses_actual_runtime_failure_for_violation(
+        self,
+    ):
+        payload = self.build(
+            scenario="freshness_breach",
+            policy_id="PAC-RUNTIME-001",
+        )
+
+        request = payload[
+            "quarantine_request"
+        ]
+
+        self.assertEqual(
+            request[
+                "policy_id"
+            ],
+            "PAC-FRESH-001",
+        )
+
+        self.assertEqual(
+            request[
+                "policy_category"
+            ],
+            "freshness",
+        )
+
+        self.assertEqual(
+            request[
+                "violation_code"
+            ],
+            "PAC-RUNTIME-001",
+        )
+
+        self.assertIn(
+            "PAC-RUNTIME-001",
+            request[
+                "violation_details"
+            ],
+        )
+
     def test_schema_break_has_no_quarantine_request(
         self,
     ):
@@ -597,7 +715,7 @@ class TestBuildC2FallbackRequest(
                 verification_status="PASS",
             )
 
-    def test_rejects_missing_primary_policy_violation(
+    def test_rejects_verification_without_non_release_blocker(
         self,
     ):
         with self.assertRaises(
@@ -606,6 +724,94 @@ class TestBuildC2FallbackRequest(
             self.build(
                 scenario="quality_regression",
                 policy_id="PAC-RELEASE-001",
+            )
+
+    def test_rejects_missing_source_scenario_policy(
+        self,
+    ):
+        (
+            plan_path,
+            result_path,
+            verification_path,
+        ) = self.fixtures(
+            scenario="freshness_breach",
+            policy_id="PAC-RUNTIME-001",
+        )
+
+        plan = json.loads(
+            plan_path.read_text(
+                encoding="utf-8"
+            )
+        )
+
+        plan[
+            "source_policy_decision"
+        ][
+            "triggered_policy_ids"
+        ] = [
+            "PAC-RELEASE-001",
+        ]
+
+        plan_path.write_bytes(
+            canonical_bytes(
+                plan
+            )
+        )
+
+        result = json.loads(
+            result_path.read_text(
+                encoding="utf-8"
+            )
+        )
+
+        result[
+            "source_remediation_plan_sha256"
+        ] = sha256(
+            plan_path
+        )
+
+        result_path.write_bytes(
+            canonical_bytes(
+                result
+            )
+        )
+
+        verification = json.loads(
+            verification_path.read_text(
+                encoding="utf-8"
+            )
+        )
+
+        verification[
+            "source_remediation_plan_sha256"
+        ] = sha256(
+            plan_path
+        )
+
+        verification[
+            "source_remediation_result_sha256"
+        ] = sha256(
+            result_path
+        )
+
+        verification_path.write_bytes(
+            canonical_bytes(
+                verification
+            )
+        )
+
+        with self.assertRaises(
+            FallbackRequestError
+        ):
+            build_fallback_request(
+                plan_path=plan_path,
+                result_path=result_path,
+                verification_path=verification_path,
+                catalog_path=CATALOG,
+                schema_path=SCHEMA,
+                context=self.context(
+                    "freshness_breach"
+                ),
             )
 
     def test_rejects_source_outside_c2_experiment_boundary(

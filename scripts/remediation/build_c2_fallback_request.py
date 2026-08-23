@@ -488,43 +488,10 @@ def validate_catalog_alignment(
     return scenario
 
 
-def value_contains(
-    value: Any,
-    expected: str,
-) -> bool:
-    if value == expected:
-        return True
-
-    if isinstance(
-        value,
-        dict,
-    ):
-        return any(
-            value_contains(
-                child,
-                expected,
-            )
-            for child in value.values()
-        )
-
-    if isinstance(
-        value,
-        list,
-    ):
-        return any(
-            value_contains(
-                child,
-                expected,
-            )
-            for child in value
-        )
-
-    return False
-
-
 def select_policy_violation(
     *,
     scenario_id: str,
+    plan: dict[str, Any],
     verification: dict[str, Any],
 ) -> tuple[
     str,
@@ -544,6 +511,36 @@ def select_policy_violation(
         "policy_category"
     ]
 
+    source_decision = plan.get(
+        "source_policy_decision"
+    )
+
+    if not isinstance(
+        source_decision,
+        dict,
+    ):
+        raise FallbackRequestError(
+            "Plan source_policy_decision must be an object."
+        )
+
+    source_triggered = source_decision.get(
+        "triggered_policy_ids"
+    )
+
+    if not isinstance(
+        source_triggered,
+        list,
+    ):
+        raise FallbackRequestError(
+            "Plan source triggered_policy_ids must be an array."
+        )
+
+    if policy_id not in source_triggered:
+        raise FallbackRequestError(
+            f"Expected source policy {policy_id} "
+            "is absent from the remediation plan."
+        )
+
     triggered = verification.get(
         "triggered_policy_ids"
     )
@@ -557,10 +554,17 @@ def select_policy_violation(
             "must be an array."
         )
 
-    if policy_id not in triggered:
+    if not all(
+        isinstance(
+            item,
+            str,
+        )
+        and item
+        for item in triggered
+    ):
         raise FallbackRequestError(
-            f"Expected blocking policy {policy_id} "
-            "is absent from verification."
+            "Verification triggered_policy_ids must contain "
+            "only non-empty strings."
         )
 
     violations = verification.get(
@@ -575,6 +579,62 @@ def select_policy_violation(
             "Verification violations must be an array."
         )
 
+    checks = verification.get(
+        "check_results"
+    )
+
+    if not isinstance(
+        checks,
+        list,
+    ):
+        raise FallbackRequestError(
+            "Verification check_results must be an array."
+        )
+
+    failed_policy_ids = {
+        check.get(
+            "policy_id"
+        )
+        for check in checks
+        if (
+            isinstance(
+                check,
+                dict,
+            )
+            and check.get(
+                "status"
+            ) == "FAIL"
+            and check.get(
+                "policy_id"
+            ) != "PAC-RELEASE-001"
+        )
+    }
+
+    failed_policy_ids.discard(
+        None
+    )
+
+    if len(
+        failed_policy_ids
+    ) != 1:
+        raise FallbackRequestError(
+            "Expected exactly one non-release blocking "
+            "verification policy; observed "
+            f"{len(failed_policy_ids)}."
+        )
+
+    violation_code = next(
+        iter(
+            failed_policy_ids
+        )
+    )
+
+    if violation_code not in triggered:
+        raise FallbackRequestError(
+            "Failed verification policy is absent from "
+            "triggered_policy_ids."
+        )
+
     matching = [
         violation
         for violation in violations
@@ -583,10 +643,9 @@ def select_policy_violation(
                 violation,
                 dict,
             )
-            and value_contains(
-                violation,
-                policy_id,
-            )
+            and violation.get(
+                "policy_id"
+            ) == violation_code
         )
     ]
 
@@ -595,7 +654,7 @@ def select_policy_violation(
     ) != 1:
         raise FallbackRequestError(
             "Expected exactly one verification "
-            f"violation associated with {policy_id}; "
+            f"violation associated with {violation_code}; "
             f"observed {len(matching)}."
         )
 
@@ -606,7 +665,7 @@ def select_policy_violation(
     return (
         policy_id,
         policy_category,
-        policy_id,
+        violation_code,
         canonical_text(
             violation
         ),
@@ -853,6 +912,7 @@ def build_fallback_request(
         violation_details,
     ) = select_policy_violation(
         scenario_id=scenario_id,
+        plan=plan,
         verification=verification,
     )
 
