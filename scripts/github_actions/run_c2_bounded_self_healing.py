@@ -579,7 +579,6 @@ def prepare_context_fixtures(
                 "fixture_role": "sanitized_source",
                 "trusted": True,
                 "state": "redacted_safe",
-                "synthetic_email": "[REDACTED]",
             },
         )
 
@@ -711,6 +710,9 @@ def execute_c2_remediation(
 
 def build_c2_recovery_evidence(
     *,
+    plan: str,
+    context: str,
+    workspace_root: str,
     result: str,
     details: str,
     pre_evidence: str,
@@ -719,6 +721,12 @@ def build_c2_recovery_evidence(
     run_python_script(
         "scripts/remediation/build_c2_recovery_evidence.py",
         [
+            "--plan",
+            plan,
+            "--context",
+            context,
+            "--workspace-root",
+            workspace_root,
             "--result",
             result,
             "--details",
@@ -1019,6 +1027,9 @@ def main() -> int:
     )
 
     build_c2_recovery_evidence(
+        plan=str(plan_output),
+        context=str(context_output),
+        workspace_root=str(workspace_root),
         result=str(result_output),
         details=str(details_output),
         pre_evidence=args.pre_evidence,

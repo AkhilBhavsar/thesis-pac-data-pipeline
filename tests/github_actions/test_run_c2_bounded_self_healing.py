@@ -676,11 +676,57 @@ class C2WrapperFixtureHandoffTest(
             ],
             "c2-fixture@example.invalid",
         )
+        self.assertNotIn(
+            "synthetic_email",
+            sanitized_payload,
+        )
         self.assertEqual(
-            sanitized_payload[
-                "synthetic_email"
+            sanitized_payload["state"],
+            "redacted_safe",
+        )
+        self.assertTrue(
+            sanitized_payload["trusted"]
+        )
+
+    @patch.object(
+        wrapper,
+        "run_python_script",
+    )
+    def test_recovery_evidence_receives_isolated_context(
+        self,
+        runner,
+    ):
+        wrapper.build_c2_recovery_evidence(
+            plan="plan.json",
+            context="context.json",
+            workspace_root="workspace",
+            result="result.json",
+            details="details.json",
+            pre_evidence="pre-evidence.json",
+            output="recovery-evidence.json",
+        )
+
+        runner.assert_called_once_with(
+            (
+                "scripts/remediation/"
+                "build_c2_recovery_evidence.py"
+            ),
+            [
+                "--plan",
+                "plan.json",
+                "--context",
+                "context.json",
+                "--workspace-root",
+                "workspace",
+                "--result",
+                "result.json",
+                "--details",
+                "details.json",
+                "--pre-evidence",
+                "pre-evidence.json",
+                "--output",
+                "recovery-evidence.json",
             ],
-            "[REDACTED]",
         )
 
     def test_retry_requires_no_file_fixture(
