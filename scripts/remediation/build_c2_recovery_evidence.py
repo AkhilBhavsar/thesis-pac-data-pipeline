@@ -89,6 +89,7 @@ def build_evidence(
         "privacy",
         "quality",
         "freshness",
+        "runtime",
     )
 
     missing = [
@@ -108,36 +109,79 @@ def build_evidence(
         for section in required_sections
     }
 
+    pre_runtime = pre_evidence[
+        "runtime"
+    ]
+
+    if not isinstance(
+        pre_runtime,
+        dict,
+    ):
+        raise EvidenceBuildError(
+            "Pre evidence runtime section "
+            "must be an object."
+        )
+
+    required_runtime_metrics = (
+        "isolated_output_tables",
+        "athena_failed_queries",
+    )
+
+    missing_runtime_metrics = [
+        field
+        for field
+        in required_runtime_metrics
+        if field not in pre_runtime
+    ]
+
+    if missing_runtime_metrics:
+        raise EvidenceBuildError(
+            "Pre evidence runtime missing "
+            "required metrics: "
+            f"{missing_runtime_metrics}"
+        )
+
+    execution_status = result.get(
+        "execution_status"
+    )
+
+    pipeline_status_by_execution = {
+        "NOT_RUN": "NOT_RUN",
+        "SUCCEEDED": "PASS",
+        "FAILED": "FAIL",
+    }
+
+    if (
+        execution_status
+        not in pipeline_status_by_execution
+    ):
+        raise EvidenceBuildError(
+            "Unsupported remediation execution "
+            f"status: {execution_status}"
+        )
+
     evidence["runtime"] = {
         "pipeline_status": (
-            result.get(
-                "execution_status",
-                "UNKNOWN",
-            )
+            pipeline_status_by_execution[
+                execution_status
+            ]
         ),
-        "remediation_action": (
-            result.get(
-                "action"
-            )
-        ),
-        "remediation_mode": (
-            result.get(
-                "mode"
-            )
-        ),
-        "isolated_execution": True,
         "canonical_unchanged": (
             result.get(
                 "canonical_mutation_performed"
             )
             is False
         ),
-        "self_healing_performed": (
-            result.get(
-                "self_healing_performed"
-            )
+        "isolated_output_tables": (
+            pre_runtime[
+                "isolated_output_tables"
+            ]
         ),
-        "details": details,
+        "athena_failed_queries": (
+            pre_runtime[
+                "athena_failed_queries"
+            ]
+        ),
     }
 
     return evidence
