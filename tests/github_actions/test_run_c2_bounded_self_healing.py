@@ -291,6 +291,155 @@ class C2WrapperSemanticExitTest(
                 ),
             )
 
+    @patch.object(
+        wrapper,
+        "build_c2_fallback_request",
+    )
+    def test_verified_recovery_skips_fallback_request(
+        self,
+        fallback_builder,
+    ):
+        fallback_output = (
+            self.root
+            / "fallback-request.json"
+        )
+
+        result = (
+            wrapper
+            .prepare_c2_fallback_request(
+                verification_artifact={
+                    "verification_status": "PASS",
+                },
+                plan="plan.json",
+                result="result.json",
+                verification="verification.json",
+                catalog="catalog.json",
+                schema="fallback-schema.json",
+                output=str(fallback_output),
+            )
+        )
+
+        self.assertIsNone(result)
+        self.assertFalse(
+            fallback_output.exists()
+        )
+        fallback_builder.assert_not_called()
+
+    @patch.object(
+        wrapper,
+        "build_c2_fallback_request",
+    )
+    def test_controlled_failure_creates_fallback_request(
+        self,
+        fallback_builder,
+    ):
+        fallback_output = (
+            self.root
+            / "fallback-request.json"
+        )
+
+        def create_fallback(**arguments):
+            Path(arguments["output"]).write_text(
+                "{}\n",
+                encoding="utf-8",
+            )
+
+        fallback_builder.side_effect = (
+            create_fallback
+        )
+
+        result = (
+            wrapper
+            .prepare_c2_fallback_request(
+                verification_artifact={
+                    "verification_status": "FAIL",
+                },
+                plan="plan.json",
+                result="result.json",
+                verification="verification.json",
+                catalog="catalog.json",
+                schema="fallback-schema.json",
+                output=str(fallback_output),
+            )
+        )
+
+        self.assertEqual(
+            result,
+            str(fallback_output),
+        )
+        self.assertTrue(
+            fallback_output.is_file()
+        )
+        fallback_builder.assert_called_once()
+
+    @patch.object(
+        wrapper,
+        "build_c2_fallback_request",
+    )
+    def test_fallback_stage_rejects_stale_output(
+        self,
+        fallback_builder,
+    ):
+        fallback_output = (
+            self.root
+            / "fallback-request.json"
+        )
+        fallback_output.write_text(
+            "{}\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "already exists",
+        ):
+            wrapper.prepare_c2_fallback_request(
+                verification_artifact={
+                    "verification_status": "PASS",
+                },
+                plan="plan.json",
+                result="result.json",
+                verification="verification.json",
+                catalog="catalog.json",
+                schema="fallback-schema.json",
+                output=str(fallback_output),
+            )
+
+        fallback_builder.assert_not_called()
+
+    @patch.object(
+        wrapper,
+        "build_c2_fallback_request",
+    )
+    def test_controlled_failure_requires_fallback_artifact(
+        self,
+        fallback_builder,
+    ):
+        fallback_output = (
+            self.root
+            / "fallback-request.json"
+        )
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "did not create",
+        ):
+            wrapper.prepare_c2_fallback_request(
+                verification_artifact={
+                    "verification_status": (
+                        "MANUAL_REQUIRED"
+                    ),
+                },
+                plan="plan.json",
+                result="result.json",
+                verification="verification.json",
+                catalog="catalog.json",
+                schema="fallback-schema.json",
+                output=str(fallback_output),
+            )
+
+        fallback_builder.assert_called_once()
+
 
 class C2WrapperFixtureHandoffTest(
     unittest.TestCase

@@ -799,6 +799,71 @@ def build_c2_fallback_request(
     )
 
 
+def prepare_c2_fallback_request(
+    *,
+    verification_artifact: dict[str, Any],
+    plan: str,
+    result: str,
+    verification: str,
+    catalog: str,
+    schema: str,
+    output: str,
+) -> str | None:
+    verification_status = (
+        verification_artifact.get(
+            "verification_status"
+        )
+    )
+
+    fallback_output = Path(output)
+
+    if fallback_output.exists():
+        raise RuntimeError(
+            "Fallback request output already exists: "
+            f"{fallback_output}"
+        )
+
+    if verification_status == "PASS":
+        print(
+            "C2 stage: fallback request skipped "
+            "after verified recovery",
+            flush=True,
+        )
+        return None
+
+    if verification_status not in (
+        CONTROLLED_VERIFICATION_STATUSES
+    ):
+        raise RuntimeError(
+            "Fallback request received unexpected "
+            "verification status: "
+            f"{verification_status!r}"
+        )
+
+    print(
+        "C2 stage: fallback request preparation",
+        flush=True,
+    )
+
+    build_c2_fallback_request(
+        plan=plan,
+        result=result,
+        verification=verification,
+        catalog=catalog,
+        schema=schema,
+        output=output,
+    )
+
+    if not fallback_output.is_file():
+        raise RuntimeError(
+            "Controlled verification did not create "
+            "the fallback request: "
+            f"{fallback_output}"
+        )
+
+    return str(fallback_output)
+
+
 def main() -> int:
     args = parse_args()
 
@@ -996,12 +1061,10 @@ def main() -> int:
         )
     )
 
-    print(
-        "C2 stage: fallback request preparation",
-        flush=True,
-    )
-
-    build_c2_fallback_request(
+    fallback_request = prepare_c2_fallback_request(
+        verification_artifact=(
+            verification_artifact
+        ),
         plan=str(plan_output),
         result=str(result_output),
         verification=str(verification_output),
@@ -1050,7 +1113,7 @@ def main() -> int:
             if verified_result_output.is_file()
             else None
         ),
-        "fallback_request": str(fallback_output),
+        "fallback_request": fallback_request,
         "completed_at_utc": utc_now(),
     }
 
