@@ -1,5 +1,6 @@
 import copy
 import unittest
+from pathlib import Path
 
 from scripts.remediation.run_c2_isolated_retry import (
     EXPECTED_BRANCH,
@@ -29,6 +30,9 @@ class C2IsolatedRetryAdapterTest(
                 "freshness_breach"
             ),
             "C2_RUN_KEY": (
+                "current-c2-orchestration"
+            ),
+            "C2_SOURCE_RUN_KEY": (
                 "c2-retry-test"
             ),
             "AWS_ACCOUNT_ID": (
@@ -111,6 +115,90 @@ class C2IsolatedRetryAdapterTest(
             ],
             "C2",
         )
+
+        self.assertEqual(
+            config[
+                "source_run_key"
+            ],
+            "c2-retry-test",
+        )
+
+    def test_source_and_orchestration_run_keys_are_distinct(self):
+        environment = self.environment()
+
+        self.assertNotEqual(
+            environment["C2_RUN_KEY"],
+            environment["C2_SOURCE_RUN_KEY"],
+        )
+
+        config = validate_environment(
+            environment
+        )
+
+        self.assertEqual(
+            config["source_run_key"],
+            self.plan()["run_key"],
+        )
+
+    def test_every_retry_runtime_variable_is_required(self):
+        required_names = (
+            "AWS_ACCOUNT_ID",
+            "DATA_LAKE_BUCKET",
+            "ATHENA_RESULTS_BUCKET",
+            "DBT_ATHENA_WORKGROUP",
+            "DBT_ATHENA_DATA_DIR",
+            "DBT_ATHENA_STAGING_DIR",
+            "DBT_ATHENA_SCHEMA",
+            "DBT_GOLD_INTERNAL_SCHEMA",
+            "DBT_GOLD_PUBLIC_SCHEMA",
+        )
+
+        for name in required_names:
+            with self.subTest(name=name):
+                environment = self.environment()
+                environment.pop(name)
+
+                with self.assertRaisesRegex(
+                    RetryAdapterError,
+                    name,
+                ):
+                    validate_environment(
+                        environment
+                    )
+
+    def test_workflow_exports_complete_isolated_runtime(self):
+        repository_root = (
+            Path(__file__).resolve().parents[2]
+        )
+        workflow = (
+            repository_root
+            / ".github/workflows/"
+            "c2-bounded-self-healing.yml"
+        ).read_text(encoding="utf-8")
+
+        required_fragments = (
+            'AWS_ACCOUNT_ID: "522814714524"',
+            "DATA_LAKE_BUCKET: thesis-pac-dev-data-lake-522814714524-eu-west-1",
+            "ATHENA_RESULTS_BUCKET: thesis-pac-dev-athena-results-522814714524-eu-west-1",
+            "DBT_ATHENA_WORKGROUP: thesis-pac-dev-dbt-transform",
+            'echo "C2_SOURCE_RUN_KEY=${SOURCE_RUN_KEY}"',
+            'SCHEMA_BASE="thesis_pac_c2_${RUN_KEY}"',
+            "experiments/c2/github-actions/${RUN_KEY}/data/",
+            "experiments/c2/github-actions/${RUN_KEY}/athena/",
+            'echo "DBT_ATHENA_SCHEMA=${SILVER_SCHEMA}"',
+            'echo "DBT_GOLD_INTERNAL_SCHEMA=${GOLD_INTERNAL_SCHEMA}"',
+            'echo "DBT_GOLD_PUBLIC_SCHEMA=${GOLD_PUBLIC_SCHEMA}"',
+            'echo "THESIS_DBT_PROFILES_DIR=${PROFILE_DIR}"',
+            "Prepare isolated C2 dbt manifest",
+            'test -s "${THESIS_DBT_MANIFEST_PATH}"',
+        )
+
+        for fragment in required_fragments:
+            with self.subTest(fragment=fragment):
+                self.assertIn(
+                    fragment,
+                    workflow,
+                )
 
     def test_rejects_c1_condition(self):
         environment = (

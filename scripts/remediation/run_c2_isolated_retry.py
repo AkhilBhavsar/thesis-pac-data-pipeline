@@ -104,9 +104,9 @@ def validate_environment(
         "THESIS_SCENARIO_ID",
     )
 
-    run_key = required(
+    source_run_key = required(
         environ,
-        "C2_RUN_KEY",
+        "C2_SOURCE_RUN_KEY",
     )
 
     account_id = required(
@@ -224,9 +224,9 @@ def validate_environment(
         "commit": commit,
         "condition": condition,
         "scenario": scenario,
-        "run_key": run_key,
+        "source_run_key": source_run_key,
         "safe_run_key": safe_run_key(
-            run_key
+            source_run_key
         ),
         "account_id": account_id,
         "data_bucket": data_bucket,
@@ -472,14 +472,14 @@ def c2_isolated_retry_runner(
 
     if (
         config[
-            "run_key"
+            "source_run_key"
         ]
         != plan[
             "run_key"
         ]
     ):
         raise RetryAdapterError(
-            "C2_RUN_KEY does not match "
+            "C2_SOURCE_RUN_KEY does not match "
             "the remediation plan."
         )
 
@@ -955,7 +955,7 @@ def self_test() -> dict[str, Any]:
         "THESIS_SCENARIO_ID": (
             EXPECTED_SCENARIO
         ),
-        "C2_RUN_KEY": (
+        "C2_SOURCE_RUN_KEY": (
             "c2-freshness-retry-test"
         ),
         "AWS_ACCOUNT_ID": (

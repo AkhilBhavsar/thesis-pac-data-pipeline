@@ -40,6 +40,11 @@ permissions:
 
 env:
   AWS_REGION: eu-west-1
+  AWS_DEFAULT_REGION: eu-west-1
+  AWS_ACCOUNT_ID: "522814714524"
+  DATA_LAKE_BUCKET: thesis-pac-dev-data-lake-522814714524-eu-west-1
+  ATHENA_RESULTS_BUCKET: thesis-pac-dev-athena-results-522814714524-eu-west-1
+  DBT_ATHENA_WORKGROUP: thesis-pac-dev-dbt-transform
   EXPECTED_C2_BRANCH: feature/c2-bounded-self-healing
   C2_GITHUB_ROLE_ARN: arn:aws:iam::522814714524:role/thesis-pac-dev-github-c2
 
@@ -266,6 +271,22 @@ jobs:
           set -euo pipefail
 
           RUN_KEY="gha_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          SOURCE_RUN_KEY="gha_${{ inputs.c1_run_id }}_${{ inputs.c1_run_attempt }}"
+          SCHEMA_BASE="thesis_pac_c2_${RUN_KEY}"
+
+          SILVER_SCHEMA="${SCHEMA_BASE}_silver"
+          GOLD_INTERNAL_SCHEMA="${SCHEMA_BASE}_gold_internal"
+          GOLD_PUBLIC_SCHEMA="${SCHEMA_BASE}_gold_public"
+
+          PROFILE_DIR="${RUNNER_TEMP}/c2-dbt-profiles"
+          DATA_ROOT="s3://${DATA_LAKE_BUCKET}/experiments/c2/github-actions/${RUN_KEY}/data/"
+          RESULTS_ROOT="s3://${ATHENA_RESULTS_BUCKET}/experiments/c2/github-actions/${RUN_KEY}/athena/"
+
+          mkdir -p "${PROFILE_DIR}"
+
+          cp \
+            transformations/dbt/profiles.yml.example \
+            "${PROFILE_DIR}/profiles.yml"
 
           {
             echo "THESIS_GIT_BRANCH=${GITHUB_REF_NAME}"
@@ -273,8 +294,43 @@ jobs:
             echo "THESIS_SCENARIO_ID=${C2_SCENARIO}"
             echo "THESIS_GIT_COMMIT=${EXPECTED_COMMIT}"
             echo "C2_RUN_KEY=${RUN_KEY}"
+            echo "C2_SOURCE_RUN_KEY=${SOURCE_RUN_KEY}"
             echo "C2_TARGET_LAYER=gold_public"
+            echo "DBT_ATHENA_SCHEMA=${SILVER_SCHEMA}"
+            echo "DBT_GOLD_INTERNAL_SCHEMA=${GOLD_INTERNAL_SCHEMA}"
+            echo "DBT_GOLD_PUBLIC_SCHEMA=${GOLD_PUBLIC_SCHEMA}"
+            echo "DBT_ATHENA_STAGING_DIR=${RESULTS_ROOT}"
+            echo "DBT_ATHENA_DATA_DIR=${DATA_ROOT}"
+            echo "DBT_ATHENA_DATA_BUCKET=${DATA_LAKE_BUCKET}"
+            echo "DBT_ZONE_EXTERNAL_ROOT=${DATA_ROOT%/}"
+            echo "THESIS_DBT_PROFILES_DIR=${PROFILE_DIR}"
+            echo "THESIS_DBT_MANIFEST_PATH=${GITHUB_WORKSPACE}/transformations/dbt/target/manifest.json"
+            echo "THESIS_DBT_EXECUTABLE=$(command -v dbt)"
           } >> "${GITHUB_ENV}"
+
+
+      - name: Prepare isolated C2 dbt manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf \
+            transformations/dbt/target \
+            transformations/dbt/logs
+
+          dbt \
+            --no-use-colors \
+            --no-version-check \
+            parse \
+            --project-dir transformations/dbt \
+            --profiles-dir "${THESIS_DBT_PROFILES_DIR}" \
+            --target dev \
+            > c2-runtime/evidence/dbt-parse.log \
+            2>&1
+
+          cat c2-runtime/evidence/dbt-parse.log
+
+          test -s "${THESIS_DBT_MANIFEST_PATH}"
 
 
       - name: Execute deterministic C2 bounded self-healing wrapper
