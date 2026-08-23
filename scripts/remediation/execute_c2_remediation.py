@@ -7,11 +7,29 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
+
+
+if __package__ in {
+    None,
+    "",
+}:
+    repository_root = str(
+        Path(__file__)
+        .resolve()
+        .parents[2]
+    )
+
+    if repository_root not in sys.path:
+        sys.path.insert(
+            0,
+            repository_root,
+        )
 
 from jsonschema import (
     Draft202012Validator,

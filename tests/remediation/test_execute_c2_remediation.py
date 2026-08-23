@@ -1,5 +1,8 @@
 import hashlib
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -152,6 +155,69 @@ class C2RemediationExecutorTest(unittest.TestCase):
     def validate_result(self, payload):
         self.validator.validate(
             payload
+        )
+
+    def test_file_entrypoint_bootstraps_repository_import_path(
+        self,
+    ):
+        probe = "\n".join(
+            [
+                "import pathlib",
+                "import runpy",
+                "import sys",
+                "root = pathlib.Path.cwd().resolve()",
+                "sys.path = [",
+                "    entry",
+                "    for entry in sys.path",
+                "    if entry",
+                "    and pathlib.Path(entry).resolve() != root",
+                "]",
+                "runpy.run_path(",
+                "    'scripts/remediation/'",
+                "    'execute_c2_remediation.py',",
+                "    run_name='c2_executor_entrypoint_probe',",
+                ")",
+                "from scripts.remediation.run_c2_isolated_retry import (",
+                "    c2_isolated_retry_runner,",
+                ")",
+                "assert callable(c2_isolated_retry_runner)",
+                "print('ENTRYPOINT_IMPORT_PASS')",
+            ]
+        )
+
+        environment = dict(
+            os.environ
+        )
+
+        environment[
+            "PYTHONPATH"
+        ] = ""
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                probe,
+            ],
+            cwd=ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(
+            completed.returncode,
+            0,
+            msg=(
+                completed.stdout
+                + completed.stderr
+            ),
+        )
+
+        self.assertIn(
+            "ENTRYPOINT_IMPORT_PASS",
+            completed.stdout,
         )
 
     def test_rollback_replaces_only_isolated_target(self):
