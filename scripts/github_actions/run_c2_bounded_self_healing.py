@@ -45,6 +45,12 @@ ALLOWED_SCENARIOS = {
     "policy_false_positive",
 }
 
+QUARANTINE_FALLBACK_SCENARIOS = {
+    "pii_exposure",
+    "freshness_breach",
+    "quality_regression",
+}
+
 
 def utc_now() -> str:
     return (
@@ -303,6 +309,30 @@ def validate_environment() -> dict[str, str]:
         "C2_TARGET_LAYER"
     )
 
+    data_bucket = require_environment(
+        "DATA_LAKE_BUCKET"
+    )
+
+    data_root_uri = require_environment(
+        "DBT_ATHENA_DATA_DIR"
+    )
+
+    github_server_url = require_environment(
+        "GITHUB_SERVER_URL"
+    )
+
+    github_repository = require_environment(
+        "GITHUB_REPOSITORY"
+    )
+
+    github_run_id = require_environment(
+        "GITHUB_RUN_ID"
+    )
+
+    github_run_attempt = require_environment(
+        "GITHUB_RUN_ATTEMPT"
+    )
+
     if branch != EXPECTED_BRANCH:
         raise RuntimeError(
             f"Unexpected branch: {branch}"
@@ -339,6 +369,31 @@ def validate_environment() -> dict[str, str]:
             "C2 target layer must not be empty"
         )
 
+    expected_run_key = (
+        f"gha_{github_run_id}_"
+        f"{github_run_attempt}"
+    )
+
+    if run_key != expected_run_key:
+        raise RuntimeError(
+            "C2 run key does not match the "
+            "current GitHub run identity."
+        )
+
+    expected_data_root = (
+        f"s3://{data_bucket}/"
+        "experiments/c2/github-actions/"
+        f"{run_key}/"
+    )
+
+    if not data_root_uri.startswith(
+        expected_data_root
+    ):
+        raise RuntimeError(
+            "C2 data root escaped the "
+            "experiments/c2 boundary."
+        )
+
     return {
         "branch": branch,
         "condition": condition,
@@ -346,6 +401,95 @@ def validate_environment() -> dict[str, str]:
         "commit": commit,
         "run_key": run_key,
         "target_layer": target_layer,
+        "data_bucket": data_bucket,
+        "data_root_uri": data_root_uri,
+        "github_server_url": (
+            github_server_url
+        ),
+        "github_repository": (
+            github_repository
+        ),
+        "github_run_id": github_run_id,
+        "github_run_attempt": (
+            github_run_attempt
+        ),
+    }
+
+
+def build_quarantine_fallback_context(
+    *,
+    environment: dict[str, str],
+) -> dict[str, str] | None:
+    scenario = environment[
+        "scenario"
+    ]
+
+    if scenario not in (
+        QUARANTINE_FALLBACK_SCENARIOS
+    ):
+        return None
+
+    data_bucket = environment[
+        "data_bucket"
+    ]
+
+    data_root_uri = environment[
+        "data_root_uri"
+    ]
+
+    bucket_uri = (
+        f"s3://{data_bucket}/"
+    )
+
+    if not data_root_uri.startswith(
+        bucket_uri
+    ):
+        raise RuntimeError(
+            "C2 quarantine source does not "
+            "belong to the data-lake bucket."
+        )
+
+    source_key = data_root_uri[
+        len(bucket_uri):
+    ]
+
+    if not source_key.startswith(
+        (
+            "experiments/c2/github-actions/"
+            + environment["run_key"]
+            + "/"
+        )
+    ):
+        raise RuntimeError(
+            "C2 quarantine source does not "
+            "belong to the current run."
+        )
+
+    evidence_uri = (
+        environment[
+            "github_server_url"
+        ].rstrip("/")
+        + "/"
+        + environment[
+            "github_repository"
+        ]
+        + "/actions/runs/"
+        + environment[
+            "github_run_id"
+        ]
+    )
+
+    return {
+        "data_classification": "synthetic",
+        "evidence_uri": evidence_uri,
+        "source_bucket": data_bucket,
+        "source_dataset": (
+            f"synthetic_{scenario}"
+        ),
+        "source_key": source_key,
+        "source_relation": environment[
+            "target_layer"
+        ],
     }
 
 
@@ -787,23 +931,59 @@ def build_c2_fallback_request(
     catalog: str,
     schema: str,
     output: str,
+    fallback_context: (
+        dict[str, str] | None
+    ) = None,
 ) -> None:
+    command = [
+        "--plan",
+        plan,
+        "--result",
+        result,
+        "--verification",
+        verification,
+        "--catalog",
+        catalog,
+        "--schema",
+        schema,
+        "--output",
+        output,
+    ]
+
+    if fallback_context is not None:
+        argument_names = {
+            "data_classification": (
+                "--data-classification"
+            ),
+            "evidence_uri": "--evidence-uri",
+            "source_bucket": "--source-bucket",
+            "source_dataset": "--source-dataset",
+            "source_key": "--source-key",
+            "source_relation": "--source-relation",
+        }
+
+        if set(
+            fallback_context
+        ) != set(argument_names):
+            raise RuntimeError(
+                "C2 quarantine fallback context "
+                "is incomplete or contains "
+                "unexpected fields."
+            )
+
+        for field, option in (
+            argument_names.items()
+        ):
+            command.extend(
+                [
+                    option,
+                    fallback_context[field],
+                ]
+            )
+
     run_python_script(
         "scripts/remediation/build_c2_fallback_request.py",
-        [
-            "--plan",
-            plan,
-            "--result",
-            result,
-            "--verification",
-            verification,
-            "--catalog",
-            catalog,
-            "--schema",
-            schema,
-            "--output",
-            output,
-        ],
+        command,
     )
 
 
@@ -816,6 +996,9 @@ def prepare_c2_fallback_request(
     catalog: str,
     schema: str,
     output: str,
+    fallback_context: (
+        dict[str, str] | None
+    ) = None,
 ) -> str | None:
     verification_status = (
         verification_artifact.get(
@@ -860,6 +1043,9 @@ def prepare_c2_fallback_request(
         catalog=catalog,
         schema=schema,
         output=output,
+        fallback_context=(
+            fallback_context
+        ),
     )
 
     if not fallback_output.is_file():
@@ -1072,6 +1258,16 @@ def main() -> int:
         )
     )
 
+    fallback_context = (
+        build_quarantine_fallback_context(
+            environment=environment
+        )
+        if verification_artifact.get(
+            "recommended_fallback_action"
+        ) == "quarantine"
+        else None
+    )
+
     fallback_request = prepare_c2_fallback_request(
         verification_artifact=(
             verification_artifact
@@ -1085,6 +1281,7 @@ def main() -> int:
             "c2-fallback-request-input.schema.json"
         ),
         output=str(fallback_output),
+        fallback_context=fallback_context,
     )
 
     completion_payload = {

@@ -637,12 +637,34 @@ def execute_retry(
                     maximum_attempts
                 ),
                 "attempts": attempts,
+                "bounded_attempts_exhausted": False,
+                "fallback_required": False,
             }
 
-    raise ExecutorError(
-        "C2 isolated retry exhausted "
-        f"{maximum_attempts} bounded attempts."
-    )
+    return {
+        "operation": (
+            "invoke_allowlisted_"
+            "c2_isolated_pipeline"
+        ),
+        "runner_profile": (
+            runner_profile
+        ),
+        "runner_reported_success": False,
+        "attempt_count": (
+            maximum_attempts
+        ),
+        "maximum_attempts": (
+            maximum_attempts
+        ),
+        "attempts": attempts,
+        "bounded_attempts_exhausted": True,
+        "fallback_required": True,
+        "fallback_action": plan[
+            "plan"
+        ][
+            "fallback_action"
+        ],
+    }
 
 def execute_manual_control(
     *,
@@ -880,7 +902,13 @@ def execute_plan(
                 1,
             )
         ),
-        execution_status="SUCCEEDED",
+        execution_status=(
+            "FAILED"
+            if details.get(
+                "runner_reported_success"
+            ) is False
+            else "SUCCEEDED"
+        ),
         terminal_state=(
             "PENDING_VERIFICATION"
         ),

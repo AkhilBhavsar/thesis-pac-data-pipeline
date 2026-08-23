@@ -78,7 +78,11 @@
       "then": {
         "properties": {
           "execution_status": {
-            "const": "SUCCEEDED"
+            "enum": [
+              "SUCCEEDED",
+              "FAILED",
+              "TIMED_OUT"
+            ]
           },
           "recovery_time_ms": {
             "type": "null"

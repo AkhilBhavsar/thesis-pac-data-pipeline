@@ -594,29 +594,80 @@ class C2RemediationExecutorTest(unittest.TestCase):
             attempts=2,
         )
 
-        with self.assertRaises(
-            ExecutorError
-        ):
-            execute_plan(
-                plan=plan,
-                context=self.context(
-                    scenario="freshness_breach",
-                    plan_sha="8" * 64,
-                    action_context={
-                        "action": "retry",
-                        "runner_profile": (
-                            "c2_isolated_pipeline"
-                        ),
-                    },
-                ),
-                workspace_root=self.workspace,
-                plan_sha256="8" * 64,
-                retry_runner=runner,
-            )
+        result, details = execute_plan(
+            plan=plan,
+            context=self.context(
+                scenario="freshness_breach",
+                plan_sha="8" * 64,
+                action_context={
+                    "action": "retry",
+                    "runner_profile": (
+                        "c2_isolated_pipeline"
+                    ),
+                },
+            ),
+            workspace_root=self.workspace,
+            plan_sha256="8" * 64,
+            retry_runner=runner,
+        )
 
         self.assertEqual(
             calls,
             [1, 2],
+        )
+
+        self.validate_result(result)
+
+        self.assertEqual(
+            result["attempt_count"],
+            2,
+        )
+
+        self.assertEqual(
+            result["execution_status"],
+            "FAILED",
+        )
+
+        self.assertEqual(
+            result["terminal_state"],
+            "PENDING_VERIFICATION",
+        )
+
+        self.assertTrue(
+            result[
+                "automatic_remediation_performed"
+            ]
+        )
+
+        self.assertFalse(
+            result[
+                "self_healing_performed"
+            ]
+        )
+
+        self.assertFalse(
+            details[
+                "runner_reported_success"
+            ]
+        )
+
+        self.assertTrue(
+            details[
+                "bounded_attempts_exhausted"
+            ]
+        )
+
+        self.assertTrue(
+            details[
+                "fallback_required"
+            ]
+        )
+
+        self.assertEqual(
+            details[
+                "fallback_action"
+            ],
+            "quarantine",
         )
 
     def test_retry_without_adapter_fails_closed(self):

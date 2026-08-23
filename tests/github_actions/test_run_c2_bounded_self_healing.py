@@ -9,6 +9,12 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 
+WORKFLOW_PATH = (
+    ROOT
+    / ".github/workflows/"
+    "c2-bounded-self-healing.yml"
+)
+
 WRAPPER_PATH = (
     ROOT
     / "scripts/github_actions/"
@@ -29,6 +35,32 @@ wrapper = importlib.util.module_from_spec(
     SPEC
 )
 SPEC.loader.exec_module(wrapper)
+
+
+class C2WorkflowRuntimeContractTest(
+    unittest.TestCase
+):
+
+    def test_dagster_evidence_root_is_isolated_and_uploaded(
+        self,
+    ):
+        workflow = WORKFLOW_PATH.read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            (
+                "THESIS_DAGSTER_EVIDENCE_ROOT="
+                "${GITHUB_WORKSPACE}/c2-runtime/"
+                "evidence/dagster"
+            ),
+            workflow,
+        )
+
+        self.assertIn(
+            "path: c2-runtime/evidence",
+            workflow,
+        )
 
 
 class C2WrapperSemanticExitTest(
@@ -371,6 +403,177 @@ class C2WrapperSemanticExitTest(
             fallback_output.is_file()
         )
         fallback_builder.assert_called_once()
+
+    def test_quarantine_context_is_current_run_and_isolated(
+        self,
+    ):
+        context = (
+            wrapper
+            .build_quarantine_fallback_context(
+                environment={
+                    "scenario": "freshness_breach",
+                    "run_key": "gha_100_1",
+                    "target_layer": "gold_public",
+                    "data_bucket": (
+                        "thesis-pac-dev-data-lake-"
+                        "522814714524-eu-west-1"
+                    ),
+                    "data_root_uri": (
+                        "s3://thesis-pac-dev-data-lake-"
+                        "522814714524-eu-west-1/"
+                        "experiments/c2/github-actions/"
+                        "gha_100_1/data/"
+                    ),
+                    "github_server_url": (
+                        "https://github.com"
+                    ),
+                    "github_repository": (
+                        "AkhilBhavsar/"
+                        "thesis-pac-data-pipeline"
+                    ),
+                    "github_run_id": "100",
+                    "github_run_attempt": "1",
+                }
+            )
+        )
+
+        self.assertIsNotNone(context)
+        self.assertEqual(
+            context[
+                "data_classification"
+            ],
+            "synthetic",
+        )
+        self.assertEqual(
+            context[
+                "source_bucket"
+            ],
+            (
+                "thesis-pac-dev-data-lake-"
+                "522814714524-eu-west-1"
+            ),
+        )
+        self.assertTrue(
+            context[
+                "source_key"
+            ].startswith(
+                "experiments/c2/"
+            )
+        )
+        self.assertEqual(
+            context[
+                "evidence_uri"
+            ],
+            (
+                "https://github.com/"
+                "AkhilBhavsar/"
+                "thesis-pac-data-pipeline/"
+                "actions/runs/100"
+            ),
+        )
+
+    def test_quarantine_context_rejects_stale_run_root(
+        self,
+    ):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "current run",
+        ):
+            (
+                wrapper
+                .build_quarantine_fallback_context(
+                    environment={
+                        "scenario": "freshness_breach",
+                        "run_key": "gha_100_1",
+                        "target_layer": "gold_public",
+                        "data_bucket": (
+                            "thesis-pac-dev-data-lake-"
+                            "522814714524-eu-west-1"
+                        ),
+                        "data_root_uri": (
+                            "s3://thesis-pac-dev-data-lake-"
+                            "522814714524-eu-west-1/"
+                            "experiments/c2/github-actions/"
+                            "gha_99_1/data/"
+                        ),
+                        "github_server_url": (
+                            "https://github.com"
+                        ),
+                        "github_repository": (
+                            "AkhilBhavsar/"
+                            "thesis-pac-data-pipeline"
+                        ),
+                        "github_run_id": "100",
+                        "github_run_attempt": "1",
+                    }
+                )
+            )
+
+    @patch.object(
+        wrapper,
+        "run_python_script",
+    )
+    def test_quarantine_context_is_forwarded_to_builder(
+        self,
+        runner,
+    ):
+        context = {
+            "data_classification": "synthetic",
+            "evidence_uri": (
+                "https://github.com/example/run/1"
+            ),
+            "source_bucket": (
+                "thesis-pac-dev-data-lake-"
+                "522814714524-eu-west-1"
+            ),
+            "source_dataset": (
+                "synthetic_freshness_breach"
+            ),
+            "source_key": (
+                "experiments/c2/run/data/"
+            ),
+            "source_relation": "gold_public",
+        }
+
+        wrapper.build_c2_fallback_request(
+            plan="plan.json",
+            result="result.json",
+            verification="verification.json",
+            catalog="catalog.json",
+            schema="schema.json",
+            output="fallback.json",
+            fallback_context=context,
+        )
+
+        script, arguments = runner.call_args.args
+
+        self.assertEqual(
+            script,
+            (
+                "scripts/remediation/"
+                "build_c2_fallback_request.py"
+            ),
+        )
+
+        for field, option in {
+            "data_classification": (
+                "--data-classification"
+            ),
+            "evidence_uri": "--evidence-uri",
+            "source_bucket": "--source-bucket",
+            "source_dataset": "--source-dataset",
+            "source_key": "--source-key",
+            "source_relation": "--source-relation",
+        }.items():
+            option_index = arguments.index(
+                option
+            )
+            self.assertEqual(
+                arguments[
+                    option_index + 1
+                ],
+                context[field],
+            )
 
     @patch.object(
         wrapper,

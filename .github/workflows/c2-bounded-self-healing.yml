@@ -306,6 +306,7 @@ jobs:
             echo "THESIS_DBT_PROFILES_DIR=${PROFILE_DIR}"
             echo "THESIS_DBT_MANIFEST_PATH=${GITHUB_WORKSPACE}/transformations/dbt/target/manifest.json"
             echo "THESIS_DBT_EXECUTABLE=$(command -v dbt)"
+            echo "THESIS_DAGSTER_EVIDENCE_ROOT=${GITHUB_WORKSPACE}/c2-runtime/evidence/dagster"
           } >> "${GITHUB_ENV}"
 
 
