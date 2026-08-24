@@ -1,7 +1,20 @@
 name: C0 Isolated Pipeline
 
+run-name: C0 | ${{ inputs.scenario_id }} | standard-ci-cd | run-${{ github.run_number }}-${{ github.run_attempt }}
+
 on:
   workflow_dispatch:
+    inputs:
+      scenario_id:
+        description: Thesis fault scenario identifier
+        required: true
+        type: choice
+        options:
+          - schema_break
+          - pii_exposure
+          - freshness_breach
+          - quality_regression
+          - policy_false_positive
 
 permissions:
   id-token: write
@@ -31,7 +44,7 @@ jobs:
       DBT_ATHENA_WORKGROUP: thesis-pac-dev-dbt-transform
 
       THESIS_EXPERIMENT_CONDITION: C0
-      THESIS_SCENARIO_ID: baseline
+      THESIS_SCENARIO_ID: ${{ inputs.scenario_id }}
       THESIS_AWS_REGION: eu-west-1
       THESIS_BRONZE_BUCKET: thesis-pac-dev-data-lake-522814714524-eu-west-1
       THESIS_BRONZE_PREFIX: bronze/
@@ -134,6 +147,10 @@ jobs:
 
           payload = {
               "status": "INITIALISED",
+              "condition": "C0",
+              "scenario_id": os.environ[
+                  "THESIS_SCENARIO_ID"
+              ],
               "github_repository": os.environ[
                   "GITHUB_REPOSITORY"
               ],
@@ -207,6 +224,41 @@ jobs:
           unset-current-credentials: true
           mask-aws-account-id: false
 
+      - name: Apply matched pre-execution scenario fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "$THESIS_SCENARIO_ID" in
+            schema_break|pii_exposure|policy_false_positive)
+              FAULT_ROOT="${THESIS_DAGSTER_EVIDENCE_ROOT}/pre-fault-injection"
+
+              mkdir -p "$FAULT_ROOT"
+
+              python \
+                scripts/experiments/inject_fault_scenario.py \
+                --scenario \
+                "$THESIS_SCENARIO_ID" \
+                --repo-root \
+                "$GITHUB_WORKSPACE" \
+                --evidence-dir \
+                "$FAULT_ROOT" \
+                --condition \
+                C0 \
+                > "${THESIS_DAGSTER_EVIDENCE_ROOT}/pre-fault-injector-stdout.json"
+
+              test -s "${FAULT_ROOT}/fault-injection.json"
+              test -s "${FAULT_ROOT}/fault-injection.patch"
+              ;;
+            freshness_breach|quality_regression)
+              echo "No pre-execution fixture required for $THESIS_SCENARIO_ID."
+              ;;
+            *)
+              echo "Unsupported C0 scenario: $THESIS_SCENARIO_ID"
+              exit 1
+              ;;
+          esac
+
       - name: Generate dbt manifest
         shell: bash
         run: |
@@ -229,17 +281,120 @@ jobs:
 
           test -s "$THESIS_DBT_MANIFEST_PATH"
 
-      - name: Execute atomic isolated C0 pipeline
+      - name: Execute and capture isolated C0 pipeline outcome
         shell: bash
         run: |
           set -euo pipefail
+
+          RUNNER_RC=0
+
+          set +e
 
           PYTHONPATH="$GITHUB_WORKSPACE/orchestration/dagster" \
           python \
             scripts/github_actions/run_c0_isolated.py \
             execute \
             --evidence-root \
-            "$THESIS_DAGSTER_EVIDENCE_ROOT"
+            "$THESIS_DAGSTER_EVIDENCE_ROOT" \
+            > "${THESIS_DAGSTER_EVIDENCE_ROOT}/c0-runner-stdout.log" \
+            2> "${THESIS_DAGSTER_EVIDENCE_ROOT}/c0-runner-stderr.log"
+
+          RUNNER_RC=$?
+
+          set -e
+
+          printf '%s\n' "$RUNNER_RC" \
+            > "${THESIS_DAGSTER_EVIDENCE_ROOT}/c0-runner-exit-code.txt"
+
+          echo "C0_PIPELINE_EXIT_CODE=${RUNNER_RC}" >> "$GITHUB_ENV"
+
+          cat "${THESIS_DAGSTER_EVIDENCE_ROOT}/c0-runner-stdout.log" || true
+          cat "${THESIS_DAGSTER_EVIDENCE_ROOT}/c0-runner-stderr.log" || true
+
+          echo "Observed C0 pipeline exit code: $RUNNER_RC"
+
+      - name: Apply matched post-execution scenario fixture
+        if: ${{ env.C0_PIPELINE_EXIT_CODE == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "$THESIS_SCENARIO_ID" in
+            freshness_breach)
+              SOURCE="${GITHUB_WORKSPACE}/data/bronze/generated/freshness_control.csv"
+              FAULT_ROOT="${THESIS_DAGSTER_EVIDENCE_ROOT}/post-fault-injection"
+              OUTPUT="${FAULT_ROOT}/freshness_control.csv"
+
+              test -s "$SOURCE"
+              mkdir -p "$FAULT_ROOT"
+
+              python \
+                scripts/experiments/inject_post_fault_scenario.py \
+                --scenario \
+                freshness_breach \
+                --source \
+                "$SOURCE" \
+                --output \
+                "$OUTPUT" \
+                --evidence-dir \
+                "$FAULT_ROOT" \
+                --condition \
+                C0 \
+                > "${THESIS_DAGSTER_EVIDENCE_ROOT}/post-fault-injector-stdout.json"
+
+              test -s "$OUTPUT"
+              test -s "${FAULT_ROOT}/fault-injection.json"
+              ;;
+            quality_regression)
+              SOURCE="${THESIS_DAGSTER_EVIDENCE_ROOT}/dbt/run_results.json"
+              FAULT_ROOT="${THESIS_DAGSTER_EVIDENCE_ROOT}/post-fault-injection"
+              OUTPUT="${FAULT_ROOT}/run_results.json"
+
+              test -s "$SOURCE"
+              mkdir -p "$FAULT_ROOT"
+
+              python \
+                scripts/experiments/inject_post_fault_scenario.py \
+                --scenario \
+                quality_regression \
+                --source \
+                "$SOURCE" \
+                --output \
+                "$OUTPUT" \
+                --evidence-dir \
+                "$FAULT_ROOT" \
+                --condition \
+                C0 \
+                > "${THESIS_DAGSTER_EVIDENCE_ROOT}/post-fault-injector-stdout.json"
+
+              test -s "$OUTPUT"
+              test -s "${FAULT_ROOT}/fault-injection.json"
+              ;;
+            schema_break|pii_exposure|policy_false_positive)
+              echo "No post-execution fixture required for $THESIS_SCENARIO_ID."
+              ;;
+            *)
+              echo "Unsupported C0 scenario: $THESIS_SCENARIO_ID"
+              exit 1
+              ;;
+          esac
+
+      - name: Finalize matched C0 observation evidence
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EVIDENCE_ROOT="${THESIS_DAGSTER_EVIDENCE_ROOT:-${RUNNER_TEMP}/c0-evidence}"
+
+          mkdir -p "$EVIDENCE_ROOT"
+
+          python \
+            scripts/github_actions/finalize_c0_observation.py \
+            --evidence-root \
+            "$EVIDENCE_ROOT" \
+            --scenario \
+            "$THESIS_SCENARIO_ID"
 
       - name: Publish workflow summary
         if: ${{ always() }}
@@ -254,6 +409,14 @@ jobs:
             echo
 
             if test -f \
+              "${EVIDENCE_ROOT}/experiment-result.json"
+            then
+              echo '```json'
+              cat \
+                "${EVIDENCE_ROOT}/experiment-result.json"
+              echo '```'
+
+            elif test -f \
               "${EVIDENCE_ROOT}/final-checkpoint.json"
             then
               echo '```json'
@@ -282,3 +445,33 @@ jobs:
           path: ${{ runner.temp }}/c0-evidence
           if-no-files-found: error
           retention-days: 30
+
+      - name: Preserve observed standard CI/CD conclusion
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXIT_CODE_FILE="${RUNNER_TEMP}/c0-evidence/c0-runner-exit-code.txt"
+
+          if ! test -s "$EXIT_CODE_FILE"
+          then
+            echo "C0 pipeline exit code was not recorded."
+            exit 1
+          fi
+
+          PIPELINE_EXIT_CODE="$(tr -d '[:space:]' < "$EXIT_CODE_FILE")"
+
+          case "$PIPELINE_EXIT_CODE" in
+            0)
+              echo "Observed standard CI/CD conclusion: success"
+              ;;
+            ''|*[!0-9]*)
+              echo "Invalid C0 pipeline exit code: $PIPELINE_EXIT_CODE"
+              exit 1
+              ;;
+            *)
+              echo "Observed standard CI/CD conclusion: failure ($PIPELINE_EXIT_CODE)"
+              exit "$PIPELINE_EXIT_CODE"
+              ;;
+          esac

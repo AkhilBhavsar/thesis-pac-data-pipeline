@@ -25,6 +25,14 @@ EXPECTED_BRANCH = "feature/dagster-orchestration"
 EXPECTED_ACCOUNT_ID = "522814714524"
 EXPECTED_ROLE_NAME = "thesis-pac-dev-github-c0"
 
+MATCHED_SCENARIOS = (
+    "schema_break",
+    "pii_exposure",
+    "freshness_breach",
+    "quality_regression",
+    "policy_false_positive",
+)
+
 EXPECTED_BRONZE_SOURCES = 10
 EXPECTED_MODEL_RESULTS = 15
 EXPECTED_TEST_RESULTS = 41
@@ -1146,7 +1154,7 @@ def execute(
             f"Unexpected condition: {condition}"
         )
 
-    if scenario != "baseline":
+    if scenario not in MATCHED_SCENARIOS:
         raise RuntimeError(
             f"Unexpected scenario: {scenario}"
         )
@@ -1555,7 +1563,7 @@ def execute(
             "GITHUB_ACTIONS_C0_ATOMIC_RUN"
         ),
         "condition": "C0",
-        "scenario": "baseline",
+        "scenario": scenario,
         "branch": branch,
         "commit": commit,
         "github_run_id": os.getenv(
@@ -1724,6 +1732,10 @@ def self_test(
                     EXPECTED_SHADOW_TABLE_COUNTS.values()
                 )
                 == 15
+            ),
+            "matched_scenario_count_5": (
+                len(MATCHED_SCENARIOS) == 5
+                and len(set(MATCHED_SCENARIOS)) == 5
             ),
         }
 
