@@ -1044,6 +1044,57 @@ def copy_dbt_artifacts(
             )
 
 
+def capture_dbt_artifacts_after_execution(
+    *,
+    repository_root: Path,
+    evidence_root: Path,
+    targets_before: set[Path],
+) -> Path:
+    """Resolve and persist Dagster-dbt output before outcome enforcement."""
+    dbt_target_path = resolve_dagster_dbt_target(
+        repository_root=repository_root,
+        targets_before=targets_before,
+    )
+
+    write_json(
+        evidence_root
+        / "dbt-target-resolution.json",
+        {
+            "status": "PASS",
+            "strategy": (
+                "SINGLE_NEW_DAGSTER_DBT_TARGET"
+            ),
+            "relative_path": str(
+                dbt_target_path.relative_to(
+                    repository_root
+                )
+            ),
+            "directory_name": (
+                dbt_target_path.name
+            ),
+            "manifest_sha256": file_sha256(
+                dbt_target_path
+                / "manifest.json"
+            ),
+            "run_results_sha256": file_sha256(
+                dbt_target_path
+                / "run_results.json"
+            ),
+            "preexisting_target_count": len(
+                targets_before
+            ),
+        },
+    )
+
+    copy_dbt_artifacts(
+        repository_root=repository_root,
+        evidence_root=evidence_root,
+        dbt_target_path=dbt_target_path,
+    )
+
+    return dbt_target_path
+
+
 def create_checksums(
     evidence_root: Path,
 ) -> str:
@@ -1416,47 +1467,18 @@ def execute(
             "Dagster returned no result."
         )
 
-    if not result.success:
-        raise RuntimeError(
-            "bronze_silver_gold_job failed."
-        )
-
     dbt_target_path = (
-        resolve_dagster_dbt_target(
+        capture_dbt_artifacts_after_execution(
             repository_root=repository_root,
+            evidence_root=evidence_root,
             targets_before=dbt_targets_before,
         )
     )
 
-    write_json(
-        evidence_root
-        / "dbt-target-resolution.json",
-        {
-            "status": "PASS",
-            "strategy": (
-                "SINGLE_NEW_DAGSTER_DBT_TARGET"
-            ),
-            "relative_path": str(
-                dbt_target_path.relative_to(
-                    repository_root
-                )
-            ),
-            "directory_name": (
-                dbt_target_path.name
-            ),
-            "manifest_sha256": file_sha256(
-                dbt_target_path
-                / "manifest.json"
-            ),
-            "run_results_sha256": file_sha256(
-                dbt_target_path
-                / "run_results.json"
-            ),
-            "preexisting_target_count": len(
-                dbt_targets_before
-            ),
-        },
-    )
+    if not result.success:
+        raise RuntimeError(
+            "bronze_silver_gold_job failed."
+        )
 
     write_json(
         evidence_root
@@ -1519,12 +1541,6 @@ def execute(
         evidence_root
         / "dbt-summary.json",
         dbt_summary,
-    )
-
-    copy_dbt_artifacts(
-        repository_root=repository_root,
-        evidence_root=evidence_root,
-        dbt_target_path=dbt_target_path,
     )
 
     isolated_inventory = shadow_inventory(

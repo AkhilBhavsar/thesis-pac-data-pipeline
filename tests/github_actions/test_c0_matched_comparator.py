@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import json
+import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -27,6 +30,8 @@ def load_module(name: str, path: Path):
 PRE = load_module("c0_pre_fixture", PRE_PATH)
 POST = load_module("c0_post_fixture", POST_PATH)
 FINALIZER = load_module("c0_observation_finalizer", FINALIZER_PATH)
+sys.modules.setdefault("boto3", types.ModuleType("boto3"))
+RUNNER = load_module("c0_isolated_runner", RUNNER_PATH)
 
 
 class C0MatchedComparatorTest(unittest.TestCase):
@@ -213,6 +218,73 @@ class C0MatchedComparatorTest(unittest.TestCase):
         self.assertIn("experiment-result.json", workflow)
         self.assertIn("finalize_c0_observation.py", workflow)
         self.assertIn("canonical_mutation_performed", FINALIZER_PATH.read_text(encoding="utf-8"))
+
+    def test_failed_result_captures_nested_dbt_evidence_before_enforcement(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            target_root = root / "transformations/dbt/target"
+            existing = target_root / "thesis_dbt_assets-existing"
+            created = target_root / "thesis_dbt_assets-failed-run"
+            evidence = root / "evidence"
+            existing.mkdir(parents=True)
+            created.mkdir(parents=True)
+            (created / "manifest.json").write_text('{"metadata": {}}\n', encoding="utf-8")
+            (created / "run_results.json").write_text(
+                json.dumps(
+                    {
+                        "results": [
+                            {
+                                "unique_id": "test.thesis_pac_pipeline.gold_contract_columns",
+                                "status": "fail",
+                                "failures": 1,
+                            }
+                        ]
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            log = root / "transformations/dbt/logs/dbt.log"
+            log.parent.mkdir(parents=True)
+            log.write_text("observed schema contract failure\n", encoding="utf-8")
+
+            resolved = RUNNER.capture_dbt_artifacts_after_execution(
+                repository_root=root,
+                evidence_root=evidence,
+                targets_before={existing.resolve()},
+            )
+
+            self.assertEqual(resolved, created.resolve())
+            self.assertEqual(
+                json.loads((evidence / "dbt-target-resolution.json").read_text())["directory_name"],
+                "thesis_dbt_assets-failed-run",
+            )
+            self.assertEqual(
+                json.loads((evidence / "dbt/run_results.json").read_text())["results"][0]["status"],
+                "fail",
+            )
+            self.assertTrue((evidence / "dbt/manifest.json").is_file())
+            self.assertTrue((evidence / "dbt/dbt.log").is_file())
+
+    def test_dbt_evidence_capture_precedes_failed_result_enforcement(self):
+        source = inspect.getsource(RUNNER.execute)
+        capture = source.index("capture_dbt_artifacts_after_execution")
+        enforcement = source.index("if not result.success")
+        self.assertLess(capture, enforcement)
+
+    def test_failed_result_capture_fails_closed_when_run_results_are_missing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            created = root / "transformations/dbt/target/thesis_dbt_assets-incomplete"
+            created.mkdir(parents=True)
+            (created / "manifest.json").write_text('{"metadata": {}}\n', encoding="utf-8")
+
+            with self.assertRaisesRegex(RuntimeError, "run_results.json"):
+                RUNNER.capture_dbt_artifacts_after_execution(
+                    repository_root=root,
+                    evidence_root=root / "evidence",
+                    targets_before=set(),
+                )
 
     def test_finalizer_records_controlled_pre_execution_failure(self):
         with tempfile.TemporaryDirectory() as temporary:
