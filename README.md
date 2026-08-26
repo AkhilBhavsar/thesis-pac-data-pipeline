@@ -1,129 +1,91 @@
 # Policy-as-Code Data Pipeline with Bounded Self-Healing
 
-## MSc Research Project
+MSc research artefact for the design and controlled evaluation of Policy-as-Code governance and bounded self-healing in a cloud-native e-commerce analytics pipeline.
 
-**Project title:**
+## Project status
 
-Design and Evaluation of Policy-as-Code Gates with Bounded Self-Healing for Cloud-Native Data Pipeline CI/CD
+The practical implementation and authoritative experiment are complete.
 
-## Research Aim
+- **45 of 45** authoritative observations accepted
+- **3 conditions × 5 scenarios × 3 replications**
+- **0** accepted technical failures
+- **0** canonical-data mutations
+- Complete timing coverage and SHA-256-locked evidence
+- Final metrics workbook, thesis figures and H1/H2 evaluation generated
 
-This project designs and evaluates a cloud-native e-commerce analytics data pipeline that combines:
+One external OPA-download failure was preserved as a technical exclusion and replaced transparently. It is not counted among the 45 accepted observations.
 
-- Policy-as-Code gates
-- data contracts
-- metadata governance
-- runtime validation
-- bounded self-healing
-- controlled experimental evaluation
+## Experimental conditions
 
-## Data Pipeline
+| Condition | Treatment | Frozen commit | Permanent tag |
+|---|---|---|---|
+| C0 | Standard CI/CD comparator | `1b0aaf720dac79c0f48056a06695b74857fd66bc` | `thesis-c0-final` |
+| C1 | CI/CD with Policy-as-Code gates | `0bd2140e509be1697dffa7b08a9ccbfc74d72953` | `thesis-c1-final` |
+| C2 | CI/CD with Policy-as-Code and bounded self-healing | `f3a4d7fbc684b40422fb498dda782be61355f656` | `thesis-c2-final` |
 
-Olist Source Data  
-↓  
-Bronze Layer  
-↓  
-Silver Layer  
-↓  
-Gold Internal / Gold Public  
-↓  
-Runtime Validation  
-↓  
-Trusted Publication or Quarantine
+The three condition branches are intentionally separate experimental treatments and should not be merged into one implementation.
 
-## Experimental Conditions
-
-- **C0:** Baseline CI/CD
-- **C1:** CI/CD with Policy-as-Code gates
-- **C2:** CI/CD with Policy-as-Code and bounded self-healing
-
-## Planned Scenarios
+## Evaluated scenarios
 
 1. Breaking schema change
 2. PII exposure in public output
 3. Freshness breach
 4. Silent data-quality regression
-5. Policy false positive
+5. Policy false positive using a deliberately safe additive change
 
-## Current Status
+## Headline results
 
-- [x] Project structure created
-- [x] Olist source data prepared
-- [x] Governance metadata generated
-- [x] Dataset contracts generated
-- [x] Freshness-control data generated
-- [x] Source-data profiling completed
-- [x] Silver layer implemented
-- [x] Silver layer validated
-- [x] Gold layer implemented
-- [x] Gold public-safe layer implemented
-- [x] Gold data-quality and reconciliation validation completed
-- [x] Gold contracts implemented and automatically validated
-- [x] Gold deterministic-output verification completed
-- [x] Local baseline C0 implemented and validated
-- [ ] AWS cloud foundation provisioned
-- [ ] Cloud baseline C0 implemented
-- [ ] Policy-as-Code condition C1 implemented
-- [ ] Bounded self-healing condition C2 implemented
-- [ ] Experiments completed
-- [ ] Results analysed
+| Metric | C0 | C1 | C2 |
+|---|---:|---:|---:|
+| Unsafe outcomes prevented | 6/12 (50%) | 12/12 (100%) | 12/12 (100%) |
+| Runtime-incident / unsafe-output-escape proxy | 6/12 (50%) | 0/12 (0%) | 0/12 (0%) |
+| Safe-change stress false-positive rate | 0/3 (0%) | 3/3 (100%) | 3/3 (100%) |
+| Manual-intervention rate | 12/15 (80%) | 15/15 (100%) | 12/15 (80%) |
+| Mean active treatment duration | 304.2 s | 168.9 s | 291.7 s |
 
-## Planned Technology Stack
+C2 produced three verified automated PII recoveries with a mean verified recovery time of **841.665 seconds (14.03 minutes)**. Its remaining unsafe outcomes ended in controlled quarantine or manual-review handoffs.
 
-- Python
-- Pandas
-- dbt Core
-- Dagster
-- Open Policy Agent
-- Conftest
-- GitHub Actions
+These are controlled descriptive results. Runtime incidents are isolated experimental proxies, and the deliberate safe-change scenario is not an estimate of production false-positive prevalence.
+
+## Pipeline architecture
+
+```text
+Olist sources
+    ↓
+Amazon S3 Bronze → AWS Glue Data Catalog
+    ↓
+Dagster orchestration + dbt transformations
+    ↓
+Silver → Gold internal / Gold public
+    ↓
+OPA/Conftest policy decisions
+    ↓
+Trusted publication, verified recovery, quarantine, or manual review
+```
+
+## Technology
+
+- Python, dbt Core and Dagster
+- Open Policy Agent and Conftest
+- GitHub Actions with AWS OIDC
 - Terraform
-- Amazon S3
-- AWS Glue Data Catalog
-- Amazon Athena
-- Amazon CloudWatch
-- AWS Lambda
-- AWS Step Functions
+- Amazon S3, Glue Data Catalog and Athena
+- AWS Lambda, Step Functions and CloudWatch
 
-## Repository Structure
+## Repository navigation
 
-- `data/` — data layers and profiling outputs
-- `experiments/` — fault-injection and experiment results
-- `governance/` — metadata, contracts and policies
-- `infra/` — Infrastructure-as-Code
-- `logs/` — runtime logs
-- `scripts/` — data preparation and validation scripts
-- `.github/` — GitHub Actions workflows
+- `.github/workflows/` — manual-only C0, C1 and C2 experiment workflows
+- `orchestration/dagster/` — orchestration assets and runtime checks
+- `transformations/dbt/` — Silver and Gold transformations and tests
+- `policies/` — policy catalogue, Rego rules, fixtures and contracts
+- `scripts/` — scenario injection, policy evaluation and remediation logic
+- `runtime/` — bounded C2 runtime components
+- `infrastructure/terraform/` — AWS infrastructure and cost controls
+- `tests/` — policy and remediation regression tests
+- `governance/` — data contracts and metadata
 
-## Project Governance
+## Reproducibility and evidence
 
-## Local C0 Baseline
+See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for the frozen execution boundary, evidence rules, metric definitions and verification process. See [docs/RESULTS_SUMMARY.md](docs/RESULTS_SUMMARY.md) for the thesis-aligned findings and limitations.
 
-The local C0 reference pipeline executes the complete Silver-to-Gold
-workflow without Policy-as-Code gates, bounded self-healing, or automatic
-remediation.
-
-Latest validated execution:
-
-- Run ID: `local-c0-20260717T225142Z`
-- Pipeline stages executed: 5
-- Pipeline stages passed: 5
-- Total runtime: 40.2440 seconds
-- Silver validation: 53 checks passed
-- Gold data-quality validation: 110 checks passed
-- Gold contract validation: 211 checks passed
-- C0 evidence validation: 31 checks passed
-- Failed checks: 0
-- Policy-as-Code enabled: false
-- Bounded self-healing enabled: false
-- Automatic remediation enabled: false
-
-The recorded runtime represents one execution on the local development
-machine. Repeated and cloud executions will be collected separately for
-the controlled experimental comparison.
-
-
-
-The `main` branch represents the latest validated project state.
-
-Development will be completed through controlled feature branches and pull requests.
+The workflows are intentionally `workflow_dispatch` only. Do not rerun authoritative cells after the dataset lock.
