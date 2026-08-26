@@ -42,4 +42,3 @@ C1 policy evaluation averaged 17.115 ms. C2 active treatment averaged 291.7 seco
 - Runtime incidents and unsafe-output escapes are isolated experimental proxies.
 - The false-positive result is specific to a deliberately injected safe-change stress scenario.
 - Only terminal `RECOVERED` outcomes with verification `PASS` contribute to MTTR.
-

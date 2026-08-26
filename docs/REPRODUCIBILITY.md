@@ -71,4 +71,3 @@ shasum -a 256 -c SHA256SUMS
 - Do not modify or overwrite locked evidence.
 - Do not delete AWS experimental resources until their exact targets have been reviewed.
 - Never commit AWS credentials, raw tokens or unredacted local logs.
-
